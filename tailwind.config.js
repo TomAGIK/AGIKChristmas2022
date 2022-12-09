@@ -4,7 +4,11 @@ module.exports = {
     "./resources/views/*.blade.php",
   ],
   theme: {
-    extend: {},
+    extend: {
+        fontFamily: {
+            score: ["Score", "sans-serif"]
+        },
+    },
   },
   plugins: [],
 }

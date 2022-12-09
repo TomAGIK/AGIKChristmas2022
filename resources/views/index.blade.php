@@ -8,8 +8,11 @@
 
         <link rel="stylesheet" href="/css/app.css">
 
+        <link rel="preload" as="font" href="/fonts/Kid Games.ttf" type="font/ttf" />
+
     </head>
     <body>
+        <div id="loadFont" style="font-family:Score; position:absolute; left:-1000px; visibility:hidden;">.</div>
         <div id="phaser">
         </div>
         <script src="/js/lib/phaser/phaser.min.js"></script>

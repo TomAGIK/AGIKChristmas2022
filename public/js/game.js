@@ -7,6 +7,8 @@ import { getLeft } from "./utilityFunctions/getLeft.js";
 import { getRight } from "./utilityFunctions/getRight.js";
 import { getTop } from "./utilityFunctions/getTop.js";
 import { getBottom } from "./utilityFunctions/getBottom.js";
+import { getRandomInt } from "./utilityFunctions/getRandomInt.js";
+import { getRandomNumber } from "./utilityFunctions/getRandomNumber.js";
 
 // Import classes
 import { Screen } from "./classes/Screen.js";
@@ -14,6 +16,8 @@ import { Screen } from "./classes/Screen.js";
 // Import plugins
 import { ButtonPlugin } from "./classes/plugins/Button.js";
 import { PopupPlugin } from "./classes/plugins/Popup.js";
+import { midpoint } from "./utilityFunctions/midpoint.js";
+import { colours } from "./constants/colours.js";
 
 // Refresh page when resized to a certain threshold
 var previousWidth = globalThis.innerWidth;
@@ -65,26 +69,107 @@ const config = {
 const constants = (screenSize === 'lg') ? {
     logo1PaddingTop: 10,
     logo1Scale: 0.3,
-    gameTitle: "Christmas Smack",
+    gameTitle: "Christmas Bash",
     titleMarginTop: 10,
     playButtonMarginTop: 100,
     instructionsButtonMarginTop: 100,
     instructionsPopupMarginX: 180,
     instructionsPopupMarginY: 80,
+    instructionsHeaderMarginTop: 35,
+    gameInstructions: `Different things will pop up out of the snow holes, and\nyou must ‘smack’ them to gain points.
+        You will have one minute to gain as many points as you can.\n
+        *image of reindeer* 50 points    *image of an elf* 100 points\n
+        *image of agik character with Christmas hat* 150 points\n
+        *image of graham’s face* 300 points\n
+        Be careful though! If you smack santa, you will\nlose 200 points.`,
+    instructionTextMarginTop: 30,
+    logo2PaddingTop: 20,
+    logo2PaddingLeft: 20,
+    logo2Scale: 0.2,
+    scoreTextPaddingTop: 20,
+    scoreTextPaddingLeft: 250,
+    countdownMarginTop: 20,
+    mainGameBgPlaceholder: "../images/Whack a Mole placeholder.png",
+    holeLocations: [
+        [[0, 0], [1, 0], [2, 0], [3, 0]],
+        [[0, 1], [1, 1], [2, 1], [3, 1]],
+        [[0, 2], [1, 2], [2, 2], [3, 2]],
+    ],
+    moleSize: { width: 100, height: 200 },
+    moleStartingOffset: { x: 230, y: 200 },
+    moleSeparationDistance: { x: 470, y: 300 },
+    stage1End: 25,
+    stage2End: 20,
+    stage3End: 10,
+    gameOverBg: "../images/desktopGameOverBackground.png",
+    finalScoreLocation: { x: 455, y: 600 },
+    playAgainBtnMarginTop: 60,
+    playAgainBtnPointerOverTexture: "playAgainHover",
 } : {
     logo1PaddingTop: 10,
     logo1Scale: 0.3,
-    gameTitle: "Christmas\nSmack",
+    gameTitle: "Christmas\nBash",
     titleMarginTop: 10,
     playButtonMarginTop: 100,
     instructionsButtonMarginTop: 100,
     instructionsPopupMarginX: 50,
     instructionsPopupMarginY: 80,
+    instructionsHeaderMarginTop: 35,
+    gameInstructions: `Different things will pop up\nout of the snow holes, and\nyou must ‘smack’ them to\ngain points.
+    You will have one minute\nto gain as many points\nas you can.
+    *image of reindeer* 50 points
+    *image of an elf* 100 points
+    *image of agik character with Christmas hat* 150 points\n
+    *image of graham’s face*\n300 points
+    Be careful though! If you\nsmack santa, you will\nlose 200 points.`,
+    instructionTextMarginTop: 25,
+    logo2PaddingTop: 20,
+    logo2PaddingLeft: 20,
+    logo2Scale: 0.15,
+    scoreTextPaddingTop: 12,
+    scoreTextPaddingLeft: 200,
+    countdownMarginTop: 20,
+    mainGameBgPlaceholder: "../images/Whack a Mole placeholder mobile.png",
+    holeLocations: [
+        [[0, 0], [1, 0], [2, 0]],
+        [[0, 1], [1, 1], [2, 1]],
+        [[0, 2], [1, 2], [2, 2]],
+    ],
+    moleSize: { width: 100, height: 200 },
+    moleStartingOffset: { x: 140, y: 150 },
+    moleSeparationDistance: { x: 315, y: 350 },
+    stage1End: 25,
+    stage2End: 20,
+    stage3End: 10,
+    gameOverBg: "../images/mobileGameOverBackground.png",
+    finalScoreLocation: { x: 450, y: 500 },
+    playAgainBtnMarginTop: 25,
+    playAgainBtnPointerOverTexture: "playAgainDown",
 }
 
 // Initialise global game variables
-var screens = {};
-var popups = {};
+var screens = {}; // Contains all the game screens
+var popups = {}; // Contains all the game popups
+var player = { // Holds information about the current player
+    name: "",
+    attempts: 0,
+    score: 0,
+};
+var countdown = { // Contains the time before play initiates, and the interval id is added later on
+    time: 3,
+}
+var timer; // Timer interval id is assigned to this
+var timeRemaining = 5; // Time limit on the game
+var emitter; // Variable to hold the event emitter for the game
+var points = { // The different textures for the moles, and the corresponding point worth of each
+    0x964b00: 50,
+    0x00ff00: 100,
+    0xff0000: 150,
+    0xffd700: 300
+}
+
+var visibleMoles = []; // Array of the locations of all moles currently visible
+var curStageTimeout; // Will hold the timeout ID for stage 1
 
 const game = new Phaser.Game(config);
 
@@ -92,18 +177,29 @@ function preload() {
     // Assign useful dimensions to variables
     this.gameWidth = this.sys.game.canvas.width;
     this.gameHeight = this.sys.game.canvas.height;
-    this.center = { x: this.gameWidth/2, y: this.gameHeight/2 }
+    this.center = { x: this.gameWidth/2, y: this.gameHeight/2 };
 
     // Load images
     this.load.image("logo", "../images/Logo.png");
+    this.load.image("placeholderBg", constants.mainGameBgPlaceholder);
+    this.load.image("gameOverBg", constants.gameOverBg);
+    this.load.image("playAgainIdle", "../images/buttons/play-again-idle.png");
+    this.load.image("playAgainHover", "../images/buttons/play-again-hovered.png");
+    this.load.image("playAgainDown", "../images/buttons/play-again-clicked.png");
 
 }
 
 function create() {
+    // Create event emitter
+    emitter = new Phaser.Events.EventEmitter();
+    emitter.on("updateTimeRemaining", updateTimeRemaining);
+    emitter.on("startCountdown", updateCountdown);
 
     // Create screen objects and children
     screens = {
         introScreen: new Screen(this, 0, 0, initIntroScreenChildren(this)),
+        mainGame: new Screen(this, 0, 0, initMainGameChildren(this)),
+        gameOverScreen: new Screen(this, 0, 0, initGameOverScreenChildren(this)),
     }
 
     // Create all popups
@@ -111,7 +207,7 @@ function create() {
         instructions: this.add.popup(0, 0, initInstructionsPopup(this)),
     }
 
-    startGame();
+    loadStartScreen();
 }
 
 function update() {}
@@ -128,6 +224,8 @@ function initIntroScreenChildren(scene) {
 
     // Play button
     objects["playBtn"] = scene.add.button(scene.center.x, getBottom(objects["title"])+constants.playButtonMarginTop, "PLAY", textStyles.bodyWhite);
+    // Begin game on click
+    objects["playBtn"].on("pointerup", initialiseGame);
 
     // How To Play button
     objects["instructionsBtn"] = scene.add.button(scene.center.x, getBottom(objects["playBtn"])+constants.instructionsButtonMarginTop, "HOW TO PLAY", textStyles.bodyWhite);
@@ -141,14 +239,354 @@ function initInstructionsPopup(scene) {
     var objects = {};
 
     // White background
-    objects["bg"] = scene.add.rectangle(scene.center.x, scene.center.y, scene.gameWidth - 2*constants.instructionsPopupMarginX, scene.gameHeight - 2*constants.instructionsPopupMarginY, 0xffffff)
+    objects["bg"] = scene.add.rectangle(scene.center.x, scene.center.y, scene.gameWidth - 2*constants.instructionsPopupMarginX, scene.gameHeight - 2*constants.instructionsPopupMarginY, 0xffffff);
+    objects["bg"].setInteractive();
+
+    // Close button
+    objects["closeBtn"] = scene.add.button(getRight(objects["bg"]), getTop(objects["bg"]), "X", textStyles.bodyWhite);
+    // Aligns edges with the popup background edges
+    objects["closeBtn"].setPosition(objects["closeBtn"].x - 0.5*objects["closeBtn"].displayWidth, objects["closeBtn"].y + 0.5*objects["closeBtn"].displayHeight);
+    objects["closeBtn"].on("pointerup", () => popups["instructions"].hide());
+
+    // Header text
+    objects["header"] = scene.add.text(scene.center.x, getTop(objects["bg"]) + constants.instructionsHeaderMarginTop, "How to Play", textStyles.heading1Blue1).setOrigin(0.5, 0);
+
+    // Instructions
+    objects["instructions"] = scene.add.text(scene.center.x, getBottom(objects["header"]) + constants.instructionTextMarginTop, constants.gameInstructions, textStyles.bodyBlue1).setOrigin(0.5, 0);
 
     return objects;
 }
 
-function startGame() {
+function initMainGameChildren(scene) {
+    var objects = {};
+
+    // Background Image
+    objects["bg"] = scene.add.image(0, 0, "placeholderBg").setOrigin(0);
+    objects["bg"].setDisplaySize(dimensions.x, (objects["bg"].displayHeight/objects["bg"].displayWidth)*dimensions.x);
+
+    // AGIK logo
+    objects["logo"] = scene.add.image(constants.logo2PaddingLeft, constants.logo2PaddingTop, "logo").setOrigin(0).setScale(constants.logo2Scale);
+    let logoCentre = midpoint([getLeft(objects["logo"]), getTop(objects["logo"])], [getRight(objects["logo"]), getBottom(objects["logo"])]);
+
+    // Score text
+    objects["score"] = scene.add.text(getRight(objects["logo"]) + constants.scoreTextPaddingLeft, logoCentre[1] + constants.scoreTextPaddingTop, `Score: ${player.score}`, textStyles.heading1Blue1).setOrigin(0, 0.5);
+
+    // Time remaining
+    objects["timeRemaining"] = scene.add.text(scene.center.x, getBottom(objects["logo"]) + constants.countdownMarginTop, `Time Remaining: ${timeRemaining}`, textStyles.heading1Blue1).setOrigin(0.5, 0);
+
+    // Starting countdown
+    objects["countdown"] = scene.add.text(scene.center.x, scene.center.y, `${countdown.time}`, textStyles.titleBlue1).setOrigin(0.5);
+
+    // Create a mole at each hole
+    constants.holeLocations.forEach((row, i) => {
+        var rowNum = i;
+        row.forEach((location, i) => {
+            // Add the mole at the correct placement, with a random texture
+            objects[`location${location[0]}${location[1]}`] = scene.add.rectangle(
+                i*constants.moleSeparationDistance.x + constants.moleStartingOffset.x,
+                rowNum*constants.moleSeparationDistance.y + constants.moleStartingOffset.y,
+                constants.moleSize.width,
+                constants.moleSize.height,
+                colours[setMoleTexture()][1].num
+                ).setInteractive({ useHandCursor: true }).setVisible(false);
+
+            // When clicked, hide the mole and update the user's score
+            objects[`location${location[0]}${location[1]}`].on("pointerdown", () => { moleClicked(location) });
+        });
+    });
+
+    return objects;
+}
+
+function initGameOverScreenChildren(scene) {
+    var objects = {};
+
+    // Background image
+    objects["bg"] = scene.add.image(scene.center.x, scene.center.y, "gameOverBg").setOrigin(0.5);
+
+    // Score
+    objects["scoreText"] = scene.add.text(constants.finalScoreLocation.x, constants.finalScoreLocation.y, player.score, textStyles.finalScore).setOrigin(0.5);
+
+    // Play again button
+    objects["playAgainBtn"] = scene.add.image(objects["scoreText"].x, getBottom(objects["scoreText"]) + constants.playAgainBtnMarginTop, "playAgainIdle").setOrigin(0.5, 0);
+    objects["playAgainBtn"].setInteractive({ useHandCursor: true })
+    .on("pointerover", () => { objects["playAgainBtn"].setTexture(constants.playAgainBtnPointerOverTexture) })
+    .on("pointerout", () => { objects["playAgainBtn"].setTexture("playAgainIdle") })
+    .on("pointerdown", () => { objects["playAgainBtn"].setTexture("playAgainDown") })
+    .on("pointerup", () => { objects["playAgainBtn"].setTexture("playAgainHover"); initialiseGame(); });
+
+    return objects;
+}
+
+function loadStartScreen() {
     // Hide everything except the start screen
     Object.keys(screens).forEach(screen => screens[screen].setVisible(false));
     Object.keys(popups).forEach(popup => popups[popup].setVisible(false));
-    screens["introScreen"].setVisible(true);
+    // screens["introScreen"].setVisible(true);
+
+    // To see just the game over screen, comment line above, and uncomment line below
+    screens["gameOverScreen"].setVisible(true);
+
+}
+
+function initialiseGame() {
+    // Set game variables
+    player.name = player.name ?? "AAA";
+    player.attempts ++;
+
+    // Hide start and end screen and show the main game
+    screens["introScreen"].setVisible(false);
+    screens["gameOverScreen"].setVisible(false);
+    screens["mainGame"].setVisible(true);
+
+    // Starts the countdown for play begin
+    countdown.timer = setInterval(() => {
+        emitter.emit("startCountdown");
+    }, 1000);
+
+}
+
+function startGameplay() {
+    // Starts the game timer
+    timer = setInterval(() => {
+        emitter.emit("updateTimeRemaining");
+    }, 1000);
+
+    // Show one mole at a time
+    stage1();
+
+}
+
+function stage1(step="init") {
+
+    // Set random display time
+    var showForTime = getRandomNumber(1, 2.1, 1)*1000;
+
+    if(step === "init") {
+        // Show first mole and run next step
+        showMole();
+        curStageTimeout = setTimeout(() => {
+            stage1(1);
+        }, showForTime);
+    } else {
+        // Show mole first so that the same mole will not be shown twice in a row
+        showMole();
+        hideMole();
+
+        // Run stage 2 at appropriate time
+        curStageTimeout = setTimeout(() => {
+            (timeRemaining > constants.stage1End) ? stage1(1) : stage2();
+        }, showForTime);
+    }
+
+}
+
+function stage2(step="init") {
+    // Set random display time
+    // -> moles will be shown for a total of showForTime*2 (min: 0.75s max: 1s)
+    var showForTime = getRandomNumber(0.375, 0.5, 2)*1000;
+
+    if (step === "init") {
+        // Add second mole and run next step
+        showMole();
+        if (visibleMoles.length < 2) { // Show two moles if one gets clicked right as time ticks over
+            showMole();
+        }
+        curStageTimeout = setTimeout(() => {
+            stage2(1)
+        }, showForTime);
+    } else if (step === 1) {
+
+        // Show mole first so that the same mole will not be shown twice in a row
+        showMole();
+        hideMole();
+
+        // Run stage 3 at appropriate time
+        curStageTimeout = setTimeout(() => {
+            (timeRemaining > constants.stage2End) ? stage2(1) : stage3();
+        }, showForTime);
+    }
+
+}
+
+function stage3(step="init") {
+    // Set random display time
+    // -> moles will be shown for a total of showForTime*3 (min: 0.75s max: 1s)
+    var showForTime = getRandomNumber(0.25, 0.5, 2)*1000;
+
+    if (step === "init") {
+        // Add third mole and run next step
+        showMole();
+        if (visibleMoles.length < 3) { // Show extra mole if one gets clicked right as time ticks over
+            showMole();
+        }
+        curStageTimeout = setTimeout(() => {
+            stage3(1)
+        }, showForTime);
+    } else if (step === 1) {
+
+        // Show mole first so that the same mole will not be shown twice in a row
+        showMole();
+        hideMole();
+
+        // Run stage 4 at appropriate time
+        curStageTimeout = setTimeout(() => {
+            (timeRemaining > constants.stage3End) ? stage3(1) : stage4();
+        }, showForTime);
+    }
+}
+
+function stage4(step="init") {
+    // Set random display time
+    // -> moles will be shown for a total of showForTime*4 (min: 0.25s max: 0.75s)
+    var showForTime = getRandomNumber(0.0625, 0.1875, 2)*1000;
+
+    if (step === "init") {
+        // Add fourth mole and run next step
+        showMole();
+        if (visibleMoles.length < 3) { // Show extra mole if one gets clicked right as time ticks over
+            showMole();
+        }
+        curStageTimeout = setTimeout(() => {
+            stage4(1)
+        }, 500);
+    } else if (step === 1) {
+        // Show mole first so that the same mole will not be shown twice in a row
+        showMole();
+        hideMole();
+
+        // Run stage 4 at appropriate time
+        curStageTimeout = setTimeout(() => {
+            stage4(1);
+        }, showForTime);
+    }
+}
+
+function gameOver() {
+    // Hide game screen and show game over
+    screens["mainGame"].setVisible(false);
+    screens["gameOverScreen"].setVisible(true);
+}
+
+function updateTimeRemaining() {
+    // Decrements the time, updates the display, and ends the game if time has run out
+    timeRemaining --;
+    if (timeRemaining > 0) {
+        screens["mainGame"].timeRemaining.setText(`Time Remaining: ${timeRemaining}`);
+    } else {
+        screens["mainGame"].timeRemaining.setText(`Time Remaining: 0`); // Update display
+        visibleMoles.forEach(mole => screens["mainGame"][`location${mole[0]}${mole[1]}`].setVisible(false)); // Hide all visible moles
+        visibleMoles = []; // reset array
+        clearInterval(timer); // Stop countdown timer
+        clearInterval(curStageTimeout); // Stop game execution
+        gameOver(); // Show game end screen
+    }
+}
+
+function updateCountdown() {
+    // Counts down from 3
+    // Starts the gameplay when it finishes
+
+    countdown.time --;
+    if (countdown.time > 0) {
+        screens["mainGame"].countdown.setText(`${countdown.time}`);
+    } else {
+        screens["mainGame"].countdown.setText(`GO!`);
+        clearInterval(countdown.timer);
+        setTimeout(() => {
+            screens["mainGame"].countdown.setVisible(false);
+            startGameplay();
+        }, 1000);
+    }
+}
+
+function setMoleTexture() {
+    // Returns a string based on the following percentages
+    // brown -> 50%
+    // green -> 30%
+    // red -> 18%
+    // gold -> 2%
+
+    var probability = Math.random();
+    var texture;
+
+    // This is redundant at the moment, but I've left it because
+    // this is going to get updated with the texture frames when they're ready
+    if (probability <= 0.5) {
+        texture = "brown";
+    } else if (probability <= 0.8) {
+        texture = "green";
+    } else if (probability <= 0.98) {
+        texture = "red";
+    } else {
+        texture = "gold";
+    }
+
+    return texture;
+}
+
+function moleClicked(mole) {
+    clearTimeout(curStageTimeout); // Kill current stage execution
+    hideMole(mole);
+    updateScore(points[screens["mainGame"][`location${mole[0]}${mole[1]}`].fillColor]); // Update score based on point value of texture
+    // Restart stage execution
+    if (timeRemaining > constants.stage1End) {
+        stage1();
+    } else if (timeRemaining > constants.stage2End) {
+        stage2();
+    } else if (timeRemaining > constants.stage3End) {
+        stage3();
+    } else {
+        stage4();
+    }
+}
+
+function updateScore(increment) {
+    // Updates the player's score, and the display
+    player.score += increment;
+    screens["mainGame"].score.setText(`Score: ${player.score}`);
+}
+
+function showMole() {
+
+    // Shows a mole that is not already visible
+
+    do { // Get random coordinates
+        var x = getRandomInt(0, constants.holeLocations[0].length-1);
+        var y = getRandomInt(0, constants.holeLocations.length-1);
+    } while (visibleMoles.filter(coords => coords.join() === [x, y].join()).length); // check if mole at this location is visible already
+
+    // Update mole texture
+    screens["mainGame"][`location${x}${y}`].setFillStyle(colours[setMoleTexture()][1].num);
+
+    // Set mole to visible
+    visibleMoles.push([x, y]);
+    screens["mainGame"][`location${x}${y}`].setVisible(true);
+
+}
+
+function hideMole(target=[]) {
+    // Hides the target mole if given, otherwise hides the mole
+    // that has been shown for the longest time
+
+    var moleToHide;
+
+    if (target.length) {
+        var indexToHide;
+        moleToHide = target;
+        visibleMoles.every((mole, i) => {
+            if (mole.join() === target.join()) {
+                indexToHide = i;
+                return false;
+            } else {
+                return true;
+            }
+        });
+        visibleMoles.splice(indexToHide, 1);
+    } else {
+        moleToHide = visibleMoles.shift();
+    }
+
+    screens["mainGame"][`location${moleToHide[0]}${moleToHide[1]}`].setVisible(false);
+
 }

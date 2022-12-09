@@ -25,10 +25,14 @@ export class PopupGameObject extends Phaser.GameObjects.Container {
 
     show() {
         // To do, run a zoom intro animation
+        this.setVisible(true);
+        return this;
     }
 
     hide() {
         // To do, run a shrink intro animation
+        this.setVisible(false);
+        return this;
     }
 
 }

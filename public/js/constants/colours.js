@@ -22,4 +22,16 @@ export const colours = {
         3: { hex: "#7a8389", num: 0x7a8389 },
         4: { hex: "#585e63", num: 0x585e63 },
     },
+    brown: {
+        1: { hex: "#964B00", num: 0x964b00 }
+    },
+    green: {
+        1: { hex: "#00ff00", num: 0x00ff00 }
+    },
+    red: {
+        1: { hex: "#ff0000", num: 0xff0000 }
+    },
+    gold: {
+        1: { hex: "#ffd700", num: 0xffd700 }
+    },
 }

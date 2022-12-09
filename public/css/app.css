@@ -468,69 +468,18 @@ video {
   --tw-backdrop-saturate:  ;
   --tw-backdrop-sepia:  ;
 }
-.m-auto {
-  margin: auto;
+.absolute {
+  position: absolute;
 }
-.mx-auto {
-  margin-left: auto;
-  margin-right: auto;
+.hidden {
+  display: none;
 }
-.mt-3 {
-  margin-top: 0.75rem;
+.font-score {
+  font-family: Score, sans-serif;
 }
-.mb-3 {
-  margin-bottom: 0.75rem;
-}
-.h-auto {
-  height: auto;
-}
-.h-5\/6 {
-  height: 83.333333%;
-}
-.h-screen {
-  height: 100vh;
-}
-.w-auto {
-  width: auto;
-}
-.w-11\/12 {
-  width: 91.666667%;
-}
-.border {
-  border-width: 1px;
-}
-.border-solid {
-  border-style: solid;
-}
-.border-black {
-  --tw-border-opacity: 1;
-  border-color: rgb(0 0 0 / var(--tw-border-opacity));
-}
-.pl-5 {
-  padding-left: 1.25rem;
-}
-.pl-10 {
-  padding-left: 2.5rem;
-}
-.pt-3 {
-  padding-top: 0.75rem;
-}
-.pb-3 {
-  padding-bottom: 0.75rem;
-}
-.pr-10 {
-  padding-right: 2.5rem;
-}
-.text-5xl {
-  font-size: 3rem;
-  line-height: 1;
-}
-.text-4xl {
-  font-size: 2.25rem;
-  line-height: 2.5rem;
-}
-.text-red-900 {
-  --tw-text-opacity: 1;
-  color: rgb(127 29 29 / var(--tw-text-opacity));
+
+@font-face {
+    font-family: "Score";
+    src: url("/fonts/Kid Games.ttf");
 }
 

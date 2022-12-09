@@ -97,4 +97,11 @@ export const textStyles = {
         wordWrap: { width: 550, useAdvancedWrap: true },
         fontFamily: fontFamily,
     },
+    finalScore: {
+        fontSize: '200px',
+        align: 'left',
+        color: '#fab824',
+        wordWrap: { width: 550, useAdvancedWrap: true },
+        fontFamily: "Score",
+    }
 };
