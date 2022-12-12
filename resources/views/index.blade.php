@@ -8,7 +8,13 @@
 
         <link rel="stylesheet" href="/css/app.css">
 
-        <link rel="preload" as="font" href="/fonts/Kid Games.ttf" type="font/ttf" />
+        <link rel="preload" as="font" href="/fonts/Kid Games.ttf" crossorigin="anonymous" type="font/ttf" />
+        <style>
+            @font-face {
+                font-family: Kid_Games;
+                src: url('./fonts/Kid Games.ttf');
+            }
+        </style>
 
     </head>
     <body>

@@ -11,6 +11,7 @@ import { getRandomInt } from "./utilityFunctions/getRandomInt.js";
 import { getRandomNumber } from "./utilityFunctions/getRandomNumber.js";
 
 // Import classes
+import { API } from "./classes/API.js";
 import { Screen } from "./classes/Screen.js";
 
 // Import plugins
@@ -67,6 +68,7 @@ const config = {
 
 // Set different dimensions for mobile and desktop
 const constants = (screenSize === 'lg') ? {
+    bg_main: "../images/bg_main.png",
     logo1PaddingTop: 10,
     logo1Scale: 0.3,
     gameTitle: "Christmas Bash",
@@ -86,8 +88,10 @@ const constants = (screenSize === 'lg') ? {
     logo2PaddingTop: 20,
     logo2PaddingLeft: 20,
     logo2Scale: 0.2,
-    scoreTextPaddingTop: 20,
-    scoreTextPaddingLeft: 250,
+    scoreTextPaddingTop: 310,
+    scoreTextPaddingLeft: 330,
+    timerTextPaddingTop: 265,
+    timerTextPaddingLeft: 1630,
     countdownMarginTop: 20,
     mainGameBgPlaceholder: "../images/Whack a Mole placeholder.png",
     holeLocations: [
@@ -103,9 +107,16 @@ const constants = (screenSize === 'lg') ? {
     stage3End: 10,
     gameOverBg: "../images/desktopGameOverBackground.png",
     finalScoreLocation: { x: 455, y: 600 },
-    playAgainBtnMarginTop: 60,
+    playAgainBtnMarginTop: 123,
     playAgainBtnPointerOverTexture: "playAgainHover",
+    leaderboardListItems: 10,
+    leaderboardHeader_name: { x: 1100, y: 310 },
+    leaderboardHeader_pts: { x: 1580, y: 310 },
+    leaderboardRanks: { x: 1010, y: 366 },
+    leaderboardName: { x: 1100, y: 366 },
+    leaderboardPoints: { x: 1580, y: 366 },
 } : {
+    bg_main: "../images/bg_main_mobile.png",
     logo1PaddingTop: 10,
     logo1Scale: 0.3,
     gameTitle: "Christmas\nBash",
@@ -126,8 +137,10 @@ const constants = (screenSize === 'lg') ? {
     logo2PaddingTop: 20,
     logo2PaddingLeft: 20,
     logo2Scale: 0.15,
-    scoreTextPaddingTop: 12,
-    scoreTextPaddingLeft: 200,
+    scoreTextPaddingTop: 225,
+    scoreTextPaddingLeft: 700,
+    timerTextPaddingTop: 350,
+    timerTextPaddingLeft: 700,
     countdownMarginTop: 20,
     mainGameBgPlaceholder: "../images/Whack a Mole placeholder mobile.png",
     holeLocations: [
@@ -143,11 +156,18 @@ const constants = (screenSize === 'lg') ? {
     stage3End: 10,
     gameOverBg: "../images/mobileGameOverBackground.png",
     finalScoreLocation: { x: 450, y: 500 },
-    playAgainBtnMarginTop: 25,
+    playAgainBtnMarginTop: 80,
     playAgainBtnPointerOverTexture: "playAgainDown",
+    leaderboardListItems: 5,
+    leaderboardHeader_name: { x: 180, y: 1000 },
+    leaderboardHeader_pts: { x: 600, y: 1000 },
+    leaderboardRanks: { x: 110, y: 1060 },
+    leaderboardName: { x: 180, y: 1060 },
+    leaderboardPoints: { x: 600, y: 1060 },
 }
 
 // Initialise global game variables
+var api = new API;
 var screens = {}; // Contains all the game screens
 var popups = {}; // Contains all the game popups
 var player = { // Holds information about the current player
@@ -183,6 +203,7 @@ function preload() {
     this.load.image("logo", "../images/Logo.png");
     this.load.image("placeholderBg", constants.mainGameBgPlaceholder);
     this.load.image("gameOverBg", constants.gameOverBg);
+    this.load.image("bg_main", constants.bg_main);
     this.load.image("playAgainIdle", "../images/buttons/play-again-idle.png");
     this.load.image("playAgainHover", "../images/buttons/play-again-hovered.png");
     this.load.image("playAgainDown", "../images/buttons/play-again-clicked.png");
@@ -261,21 +282,21 @@ function initMainGameChildren(scene) {
     var objects = {};
 
     // Background Image
-    objects["bg"] = scene.add.image(0, 0, "placeholderBg").setOrigin(0);
+    objects["bg"] = scene.add.image(0, 0, "bg_main").setOrigin(0);
     objects["bg"].setDisplaySize(dimensions.x, (objects["bg"].displayHeight/objects["bg"].displayWidth)*dimensions.x);
 
     // AGIK logo
-    objects["logo"] = scene.add.image(constants.logo2PaddingLeft, constants.logo2PaddingTop, "logo").setOrigin(0).setScale(constants.logo2Scale);
-    let logoCentre = midpoint([getLeft(objects["logo"]), getTop(objects["logo"])], [getRight(objects["logo"]), getBottom(objects["logo"])]);
+    // objects["logo"] = scene.add.image(constants.logo2PaddingLeft, constants.logo2PaddingTop, "logo").setOrigin(0).setScale(constants.logo2Scale);
+    // let logoCentre = midpoint([getLeft(objects["logo"]), getTop(objects["logo"])], [getRight(objects["logo"]), getBottom(objects["logo"])]);
 
     // Score text
-    objects["score"] = scene.add.text(getRight(objects["logo"]) + constants.scoreTextPaddingLeft, logoCentre[1] + constants.scoreTextPaddingTop, `Score: ${player.score}`, textStyles.heading1Blue1).setOrigin(0, 0.5);
+    objects["score"] = scene.add.text(constants.scoreTextPaddingLeft, constants.scoreTextPaddingTop, `${player.score}`, textStyles.score).setOrigin(0.5, 0.5);
 
     // Time remaining
-    objects["timeRemaining"] = scene.add.text(scene.center.x, getBottom(objects["logo"]) + constants.countdownMarginTop, `Time Remaining: ${timeRemaining}`, textStyles.heading1Blue1).setOrigin(0.5, 0);
+    objects["timeRemaining"] = scene.add.text(constants.timerTextPaddingLeft, constants.timerTextPaddingTop, `${timeRemaining}`, textStyles.timer).setOrigin(0.5, 0);
 
     // Starting countdown
-    objects["countdown"] = scene.add.text(scene.center.x, scene.center.y, `${countdown.time}`, textStyles.titleBlue1).setOrigin(0.5);
+    objects["countdown"] = scene.add.text(scene.center.x, scene.center.y, `${countdown.time}`, textStyles.timer).setOrigin(0.5);
 
     // Create a mole at each hole
     constants.holeLocations.forEach((row, i) => {
@@ -301,6 +322,30 @@ function initMainGameChildren(scene) {
 function initGameOverScreenChildren(scene) {
     var objects = {};
 
+    // API CALL - Leaderboard List
+    api.leaderboard_index().then(res => {
+        let ranks = res.data;
+
+        // List Headers
+        objects["leaderboard"] = [];
+        objects["leaderboard"][0] = scene.add.text(constants.leaderboardHeader_name.x, constants.leaderboardHeader_name.y, "NAME", textStyles.leaderboard).setOrigin(0, 0.5);
+        objects["leaderboard"][1] = scene.add.text(constants.leaderboardHeader_pts.x, constants.leaderboardHeader_pts.y, "PTS", textStyles.leaderboard).setOrigin(0, 0.5);
+
+        // Loop through the top 10
+        for (let i = 0; i < constants.leaderboardListItems; i++) {
+            // If name is too long - cut into ellipsis
+            if (ranks[i].name.length > 10)
+                objects["leaderboard"][objects["leaderboard"].length] = scene.add.text(constants.leaderboardName.x, (55*i+1)+constants.leaderboardName.y, ranks[i].name.toUpperCase().substr(0, 10)+"...", textStyles.leaderboard).setOrigin(0, 0.5);
+            else
+                objects["leaderboard"][objects["leaderboard"].length] = scene.add.text(constants.leaderboardName.x, (55*i+1)+constants.leaderboardName.y, ranks[i].name.toUpperCase(), textStyles.leaderboard).setOrigin(0, 0.5);
+
+            // Text - Rank & Score
+            objects["leaderboard"][objects["leaderboard"].length] = scene.add.text(constants.leaderboardRanks.x, (55*i+1)+constants.leaderboardRanks.y, (i+1)+'.', textStyles.leaderboard).setOrigin(0, 0.5);
+            objects["leaderboard"][objects["leaderboard"].length] = scene.add.text(constants.leaderboardPoints.x, (55*i+1)+constants.leaderboardPoints.y, ranks[i].score, textStyles.leaderboard).setOrigin(0, 0.5);
+        }
+        screens.gameOverScreen.add(objects["leaderboard"]);
+    });
+
     // Background image
     objects["bg"] = scene.add.image(scene.center.x, scene.center.y, "gameOverBg").setOrigin(0.5);
 
@@ -308,7 +353,7 @@ function initGameOverScreenChildren(scene) {
     objects["scoreText"] = scene.add.text(constants.finalScoreLocation.x, constants.finalScoreLocation.y, player.score, textStyles.finalScore).setOrigin(0.5);
 
     // Play again button
-    objects["playAgainBtn"] = scene.add.image(objects["scoreText"].x, getBottom(objects["scoreText"]) + constants.playAgainBtnMarginTop, "playAgainIdle").setOrigin(0.5, 0);
+    objects["playAgainBtn"] = scene.add.image(objects["scoreText"].x, getBottom(objects["scoreText"]) + constants.playAgainBtnMarginTop, "playAgainIdle").setOrigin(0.5, 0).setScale(0.69);
     objects["playAgainBtn"].setInteractive({ useHandCursor: true })
     .on("pointerover", () => { objects["playAgainBtn"].setTexture(constants.playAgainBtnPointerOverTexture) })
     .on("pointerout", () => { objects["playAgainBtn"].setTexture("playAgainIdle") })
@@ -462,24 +507,34 @@ function stage4(step="init") {
     }
 }
 
-function gameOver() {
+function gameOver(finalScore) {
     // Hide game screen and show game over
+    // API CALL - Leaderboard List
+    api.leaderboard_create({
+        name: String(Date.now()),
+        email: String(Date.now()+'@email.com'),
+        company: String('Company '+Date.now()),
+        score: Math.floor(Math.random() * 10000) + 1000,
+    }).then(res => {
+        alert('A record is randomly generated for the sake of data sample');
+    });
     screens["mainGame"].setVisible(false);
     screens["gameOverScreen"].setVisible(true);
+    screens["gameOverScreen"]["scoreText"].setText(finalScore);
 }
 
 function updateTimeRemaining() {
     // Decrements the time, updates the display, and ends the game if time has run out
     timeRemaining --;
     if (timeRemaining > 0) {
-        screens["mainGame"].timeRemaining.setText(`Time Remaining: ${timeRemaining}`);
+        screens["mainGame"].timeRemaining.setText(`${timeRemaining}`);
     } else {
-        screens["mainGame"].timeRemaining.setText(`Time Remaining: 0`); // Update display
+        screens["mainGame"].timeRemaining.setText(`0`); // Update display
         visibleMoles.forEach(mole => screens["mainGame"][`location${mole[0]}${mole[1]}`].setVisible(false)); // Hide all visible moles
         visibleMoles = []; // reset array
         clearInterval(timer); // Stop countdown timer
         clearInterval(curStageTimeout); // Stop game execution
-        gameOver(); // Show game end screen
+        gameOver(player.score); // Show game end screen
     }
 }
 
@@ -544,7 +599,7 @@ function moleClicked(mole) {
 function updateScore(increment) {
     // Updates the player's score, and the display
     player.score += increment;
-    screens["mainGame"].score.setText(`Score: ${player.score}`);
+    screens["mainGame"].score.setText(`${player.score}`);
 }
 
 function showMole() {
