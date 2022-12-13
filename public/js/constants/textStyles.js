@@ -103,5 +103,47 @@ export const textStyles = {
         color: '#fab824',
         wordWrap: { width: 550, useAdvancedWrap: true },
         fontFamily: "Score",
-    }
+    },
+    instructionsBlue: {
+        fontSize: '38px',
+        align: 'center',
+        color: '#2c4454',
+        wordWrap: { width: 1320, useAdvancedWrap: false },
+        fontFamily: "Score",
+    },
+    instructionsBlue2: {
+        fontSize: '45px',
+        align: 'left',
+        color: '#2c4454',
+        wordWrap: { width: 1320, useAdvancedWrap: false },
+        fontFamily: "Score",
+    },
+    instructionsRed: {
+        fontSize: '200px',
+        align: 'left',
+        color: '#fab824',
+        wordWrap: { width: 550, useAdvancedWrap: true },
+        fontFamily: "Score",
+    },
+    instructionsBlueMobile: {
+        fontSize: '200px',
+        align: 'left',
+        color: '#2c4454',
+        wordWrap: { width: 550, useAdvancedWrap: true },
+        fontFamily: "Score",
+    },
+    instructionsBlue2Mobile: {
+        fontSize: '200px',
+        align: 'left',
+        color: '#2c4454',
+        wordWrap: { width: 550, useAdvancedWrap: true },
+        fontFamily: "Score",
+    },
+    instructionsRedMobile: {
+        fontSize: '200px',
+        align: 'left',
+        color: '#fab824',
+        wordWrap: { width: 550, useAdvancedWrap: true },
+        fontFamily: "Score",
+    },
 };

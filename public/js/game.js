@@ -67,21 +67,12 @@ const config = {
 
 // Set different dimensions for mobile and desktop
 const constants = (screenSize === 'lg') ? {
-    logo1PaddingTop: 10,
-    logo1Scale: 0.3,
-    gameTitle: "Christmas Bash",
-    titleMarginTop: 10,
-    playButtonMarginTop: 100,
-    instructionsButtonMarginTop: 100,
     instructionsPopupMarginX: 180,
     instructionsPopupMarginY: 80,
     instructionsHeaderMarginTop: 35,
-    gameInstructions: `Different things will pop up out of the snow holes, and\nyou must ‘smack’ them to gain points.
-        You will have one minute to gain as many points as you can.\n
-        *image of reindeer* 50 points    *image of an elf* 100 points\n
-        *image of agik character with Christmas hat* 150 points\n
-        *image of graham’s face* 300 points\n
-        Be careful though! If you smack santa, you will\nlose 200 points.`,
+    gameInstructionsPt1: `Different things will pop up out of holes, and you must bash them to gain points.\n\nYou will have 30 seconds to gain as many points as you can.`,
+    gameInstructionsPt2: `Be careful though! if you smack\nsanta you will lose`,
+    gameInstructionsPt3: `200pts`,
     instructionTextMarginTop: 30,
     logo2PaddingTop: 20,
     logo2PaddingLeft: 20,
@@ -103,19 +94,29 @@ const constants = (screenSize === 'lg') ? {
     stage3End: 10,
     gameOverBg: "../images/desktopGameOverBackground.png",
     finalScoreLocation: { x: 455, y: 600 },
-    playAgainBtnMarginTop: 60,
+    playAgainBtnMarginTop: 170,
     playAgainBtnPointerOverTexture: "playAgainHover",
+    startScreenBg: "../images/desktopStartScreenBackground.png",
+    playBtnOffsetY: 175,
+    playBtnPointerOverTexture: "playHover",
+    instructionsBtnMarginTop: 140,
+    instructionsBtnPointerOverTexture: "instructionsHover",
+    instructionsBg: "../images/desktopHTPBackground.png",
+    closeBtnMarginTop: 75,
+    closeBtnMarginRight: 120,
+    closeBtnPointerOverTexture: "closeHover",
+    popupBg: "../images/desktopHTPTextBg.png",
+    instructionBlueTextStyle: textStyles.instructionsBlue,
+    instruction2BlueTextStyle: textStyles.instructionsBlue2,
+    instructionRedTextStyle: textStyles.instructionsRed,
+    instructionTextPt1OffsetY: 300,
+    instructionTextPt2OffsetY: 825,
+    instructionTextPt2OffsetX: 30,
 } : {
-    logo1PaddingTop: 10,
-    logo1Scale: 0.3,
-    gameTitle: "Christmas\nBash",
-    titleMarginTop: 10,
-    playButtonMarginTop: 100,
-    instructionsButtonMarginTop: 100,
     instructionsPopupMarginX: 50,
     instructionsPopupMarginY: 80,
     instructionsHeaderMarginTop: 35,
-    gameInstructions: `Different things will pop up\nout of the snow holes, and\nyou must ‘smack’ them to\ngain points.
+    gameInstructionsPt1: `Different things will pop up\nout of the snow holes, and\nyou must ‘smack’ them to\ngain points.
     You will have one minute\nto gain as many points\nas you can.
     *image of reindeer* 50 points
     *image of an elf* 100 points
@@ -143,8 +144,23 @@ const constants = (screenSize === 'lg') ? {
     stage3End: 10,
     gameOverBg: "../images/mobileGameOverBackground.png",
     finalScoreLocation: { x: 450, y: 500 },
-    playAgainBtnMarginTop: 25,
+    playAgainBtnMarginTop: 115,
     playAgainBtnPointerOverTexture: "playAgainDown",
+    startScreenBg: "../images/mobileStartScreenBackground.png",
+    playBtnOffsetY: 50,
+    playBtnPointerOverTexture: "playDown",
+    instructionsBtnMarginTop: 140,
+    instructionsBtnPointerOverTexture: "instructionsDown",
+    instructionsBg: "../images/mobileHTPBackground.jpg",
+    closeBtnMarginTop: 75,
+    closeBtnMarginRight: 70,
+    closeBtnPointerOverTexture: "closeDown",
+    popupBg: "../images/mobileHTPTextBg.png",
+    instructionBlueTextStyle: textStyles.instructionsBlueMobile,
+    instruction2BlueTextStyle: textStyles.instructionsBlue2Mobile,
+    instructionRedTextStyle: textStyles.instructionsRedMobile,
+    instructionTextPt1OffsetY: 100,
+    instructionTextPt2OffsetX: 835,
 }
 
 // Initialise global game variables
@@ -182,10 +198,22 @@ function preload() {
     // Load images
     this.load.image("logo", "../images/Logo.png");
     this.load.image("placeholderBg", constants.mainGameBgPlaceholder);
+    this.load.image("startScreenBg", constants.startScreenBg);
+    this.load.image("instructionsBg", constants.instructionsBg);
+    this.load.image("popupBg", constants.popupBg);
     this.load.image("gameOverBg", constants.gameOverBg);
+    this.load.image("playIdle", "../images/buttons/play-idle.png");
+    this.load.image("playHover", "../images/buttons/play-hovered.png");
+    this.load.image("playDown", "../images/buttons/play-clicked.png");
     this.load.image("playAgainIdle", "../images/buttons/play-again-idle.png");
     this.load.image("playAgainHover", "../images/buttons/play-again-hovered.png");
     this.load.image("playAgainDown", "../images/buttons/play-again-clicked.png");
+    this.load.image("instructionsIdle", "../images/buttons/htp-idle.png");
+    this.load.image("instructionsHover", "../images/buttons/htp-hovered.png");
+    this.load.image("instructionsDown", "../images/buttons/htp-clicked.png");
+    this.load.image("closeIdle", "../images/buttons/close-idle.png");
+    this.load.image("closeHover", "../images/buttons/close-hovered.png");
+    this.load.image("closeDown", "../images/buttons/close-clicked.png");
 
 }
 
@@ -215,22 +243,24 @@ function update() {}
 function initIntroScreenChildren(scene) {
     var objects = {};
 
-    // AGIK Logo
-    objects["logo"] = scene.add.image(0, 0, "logo").setScale(constants.logo1Scale).setOrigin(0.5, 0);
-    objects["logo"].setPosition(scene.center.x, getTop(objects["logo"]) + constants.logo1PaddingTop);
-
-    // Game title
-    objects["title"] = scene.add.text(scene.center.x, getBottom(objects["logo"])+constants.titleMarginTop, constants.gameTitle, textStyles.titleBlue1).setOrigin(0.5, 0);
+    // Background
+    objects["bg"] = scene.add.image(scene.center.x, scene.center.y, "startScreenBg").setOrigin(0.5);
 
     // Play button
-    objects["playBtn"] = scene.add.button(scene.center.x, getBottom(objects["title"])+constants.playButtonMarginTop, "PLAY", textStyles.bodyWhite);
-    // Begin game on click
-    objects["playBtn"].on("pointerup", initialiseGame);
+    objects["playBtn"] = scene.add.image(scene.center.x, scene.center.y + constants.playBtnOffsetY, "playIdle");
+    objects["playBtn"].setInteractive({ useHandCursor: true })
+    .on("pointerover", () => { objects["playBtn"].setTexture(constants.playBtnPointerOverTexture) })
+    .on("pointerout", () => { objects["playBtn"].setTexture("playIdle") })
+    .on("pointerdown", () => { objects["playBtn"].setTexture("playDown") })
+    .on("pointerup", () => { objects["playBtn"].setTexture("playHover"); initialiseGame(); });
 
-    // How To Play button
-    objects["instructionsBtn"] = scene.add.button(scene.center.x, getBottom(objects["playBtn"])+constants.instructionsButtonMarginTop, "HOW TO PLAY", textStyles.bodyWhite);
-    // Show instructions popup on click
-    objects["instructionsBtn"].on('pointerup', () => popups.instructions.setVisible(true));
+    // How to play button
+    objects["instructionsBtn"] = scene.add.image(scene.center.x, getBottom(objects["playBtn"]) + constants.instructionsBtnMarginTop, "instructionsIdle").setOrigin(0.5);
+    objects["instructionsBtn"].setInteractive({ useHandCursor: true })
+    .on("pointerover", () => { objects["instructionsBtn"].setTexture(constants.instructionsBtnPointerOverTexture) })
+    .on("pointerout", () => { objects["instructionsBtn"].setTexture("instructionsIdle") })
+    .on("pointerdown", () => { objects["instructionsBtn"].setTexture("instructionsDown") })
+    .on("pointerup", () => { objects["instructionsBtn"].setTexture("instructionsHover"); popups.instructions.show(); });
 
     return objects;
 }
@@ -238,21 +268,27 @@ function initIntroScreenChildren(scene) {
 function initInstructionsPopup(scene) {
     var objects = {};
 
-    // White background
-    objects["bg"] = scene.add.rectangle(scene.center.x, scene.center.y, scene.gameWidth - 2*constants.instructionsPopupMarginX, scene.gameHeight - 2*constants.instructionsPopupMarginY, 0xffffff);
-    objects["bg"].setInteractive();
+    // Dim background
+    objects["bg"] = scene.add.image(scene.center.x, scene.center.y, "instructionsBg").setOrigin(0.5);
+    objects["bg"].setInteractive().on("pointerup", () => popups["instructions"].hide());
+
+    // Popup background
+    objects["popupBg"] = scene.add.image(scene.center.x, scene.center.y, "popupBg").setOrigin(0.5);
+    objects["popupBg"].setInteractive();
 
     // Close button
-    objects["closeBtn"] = scene.add.button(getRight(objects["bg"]), getTop(objects["bg"]), "X", textStyles.bodyWhite);
-    // Aligns edges with the popup background edges
-    objects["closeBtn"].setPosition(objects["closeBtn"].x - 0.5*objects["closeBtn"].displayWidth, objects["closeBtn"].y + 0.5*objects["closeBtn"].displayHeight);
-    objects["closeBtn"].on("pointerup", () => popups["instructions"].hide());
+    objects["closeBtn"] = scene.add.image(scene.gameWidth - constants.closeBtnMarginRight, constants.closeBtnMarginTop, "closeIdle").setOrigin(0.5);
+    objects["closeBtn"].setInteractive({ useHandCursor: true })
+    .on("pointerover", () => { objects["closeBtn"].setTexture(constants.closeBtnPointerOverTexture) })
+    .on("pointerout", () => { objects["closeBtn"].setTexture("closeIdle") })
+    .on("pointerdown", () => { objects["closeBtn"].setTexture("closeDown") })
+    .on("pointerup", () => { objects["closeBtn"].setTexture("closeHover"); popups.instructions.hide(); });
 
-    // Header text
-    objects["header"] = scene.add.text(scene.center.x, getTop(objects["bg"]) + constants.instructionsHeaderMarginTop, "How to Play", textStyles.heading1Blue1).setOrigin(0.5, 0);
+    // Instructions text part 1
+    objects["instructionsPt1"] = scene.add.text(scene.center.x, constants.instructionTextPt1OffsetY, constants.gameInstructionsPt1.toUpperCase(), constants.instructionBlueTextStyle).setOrigin(0.5, 0);
 
-    // Instructions
-    objects["instructions"] = scene.add.text(scene.center.x, getBottom(objects["header"]) + constants.instructionTextMarginTop, constants.gameInstructions, textStyles.bodyBlue1).setOrigin(0.5, 0);
+    // Instructions text part 2
+    objects["instructionsPt2"] = scene.add.text(scene.center.x - constants.instructionTextPt2OffsetX, constants.instructionTextPt2OffsetY, constants.gameInstructionsPt2.toUpperCase(), constants.instruction2BlueTextStyle).setOrigin(0.5, 0);
 
     return objects;
 }
@@ -308,7 +344,7 @@ function initGameOverScreenChildren(scene) {
     objects["scoreText"] = scene.add.text(constants.finalScoreLocation.x, constants.finalScoreLocation.y, player.score, textStyles.finalScore).setOrigin(0.5);
 
     // Play again button
-    objects["playAgainBtn"] = scene.add.image(objects["scoreText"].x, getBottom(objects["scoreText"]) + constants.playAgainBtnMarginTop, "playAgainIdle").setOrigin(0.5, 0);
+    objects["playAgainBtn"] = scene.add.image(objects["scoreText"].x, getBottom(objects["scoreText"]) + constants.playAgainBtnMarginTop, "playAgainIdle").setOrigin(0.5);
     objects["playAgainBtn"].setInteractive({ useHandCursor: true })
     .on("pointerover", () => { objects["playAgainBtn"].setTexture(constants.playAgainBtnPointerOverTexture) })
     .on("pointerout", () => { objects["playAgainBtn"].setTexture("playAgainIdle") })
@@ -322,10 +358,10 @@ function loadStartScreen() {
     // Hide everything except the start screen
     Object.keys(screens).forEach(screen => screens[screen].setVisible(false));
     Object.keys(popups).forEach(popup => popups[popup].setVisible(false));
-    // screens["introScreen"].setVisible(true);
+    screens["introScreen"].setVisible(true);
 
     // To see just the game over screen, comment line above, and uncomment line below
-    screens["gameOverScreen"].setVisible(true);
+    // screens["gameOverScreen"].setVisible(true);
 
 }
 

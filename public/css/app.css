@@ -468,15 +468,6 @@ video {
   --tw-backdrop-saturate:  ;
   --tw-backdrop-sepia:  ;
 }
-.absolute {
-  position: absolute;
-}
-.hidden {
-  display: none;
-}
-.font-score {
-  font-family: Score, sans-serif;
-}
 
 @font-face {
     font-family: "Score";

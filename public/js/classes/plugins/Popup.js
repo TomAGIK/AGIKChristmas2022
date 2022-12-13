@@ -11,9 +11,9 @@ export class PopupGameObject extends Phaser.GameObjects.Container {
         this.childNames = Object.keys(children);
 
         // Dim the background
-        this.dullBackground = scene.add.rectangle(scene.center.x, scene.center.y, scene.gameWidth, scene.gameHeight, 0x000000, 0.5);
-        this.dullBackground.setInteractive().on("pointerup", () => this.setVisible(false));
-        this.add(this.dullBackground);
+        // this.dullBackground = scene.add.rectangle(scene.center.x, scene.center.y, scene.gameWidth, scene.gameHeight, 0x000000, 0.5);
+        // this.dullBackground.setInteractive().on("pointerup", () => this.setVisible(false));
+        // this.add(this.dullBackground);
 
         // add all children to the container
         this.childNames.forEach(child => {
