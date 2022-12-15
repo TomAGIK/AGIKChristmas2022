@@ -33,13 +33,11 @@ class LeaderboardController extends Controller
         $request->validate([
             'name' => 'required|string',
             'email' => 'required|string',
-            'company' => 'required|string',
             'score' => 'required|integer',
         ]);
 
         $leaderboard = Leaderboard::where('name', $request->name)
                 ->where('email', $request->email)
-                ->where('company', $request->company)
                 ->first();
 
         if (isset($leaderboard)) {
@@ -53,11 +51,10 @@ class LeaderboardController extends Controller
             $leaderboard->fill($request->all());
             $leaderboard->save();
         }
-        
+
         $collection = collect(Leaderboard::orderBy('score', 'DESC')->get());
         $data = $collection->where('name', $request->name)
-                ->where('email', $request->email)
-                ->where('company', $request->company);
+                ->where('email', $request->email);
         $leaderboard->rank = $data->keys()->first() + 1;
 
         return response()->json($leaderboard);

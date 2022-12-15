@@ -121,7 +121,6 @@ export const textStyles = {
         fontSize: '200px',
         align: 'left',
         color: '#fab824',
-        wordWrap: { width: 550, useAdvancedWrap: true },
         fontFamily: "Score",
     },
     leaderboard: {
@@ -129,7 +128,7 @@ export const textStyles = {
         align: 'left',
         color: colours.blue[1].hex,
         wordWrap: { width: 1000, useAdvancedWrap: true },
-        fontFamily: 'Kid_Games',
+        fontFamily: 'Score',
     },
     instructionsBlue: {
         fontSize: '38px',

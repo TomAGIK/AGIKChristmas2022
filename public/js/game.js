@@ -27,20 +27,28 @@ class Mole extends Phaser.GameObjects.Image {
         scene.add.existing(this);
         this.scene = scene;
         this.startY = y;
-        this.endY = y - 200;
-        this.setScale(constants.moleScale).setInteractive({ useHandCursor: true }).setVisible(false);
+        this.endY = y - constants.moleDisplacement;
+        this.setScale(constants.moleScale).setInteractive({ useHandCursor: false }).setVisible(false);
+        this.on("pointerdown", () => { moleClicked(this) });
         this.moveUp = scene.tweens.add({
             targets: this,
             y: this.endY,
-            duration: 1000,
+            duration: 500,
             paused: true,
         });
         this.moveDownTimeOut = scene.tweens.add({
             targets: this,
             y: this.startY,
-            duration: 1000,
+            duration: 500,
             paused: true,
             onComplete: this.hideCallback,
+        });
+        this.moveDownReset = scene.tweens.add({
+            targets: this,
+            y: this.startY,
+            duration: 10,
+            paused: true,
+            onComplete: this.resetCallback,
         });
     }
 
@@ -52,6 +60,8 @@ class Mole extends Phaser.GameObjects.Image {
     hide(reason) {
         if (reason === "timedOut") {
             this.moveDownTimeOut.play();
+        } else if (reason === "reset") {
+            this.moveDownReset.play();
         }
     }
 
@@ -59,6 +69,10 @@ class Mole extends Phaser.GameObjects.Image {
         showMole();
         targets[0].setVisible(false);
         visibleMoles.shift();
+    }
+
+    resetCallback(tween, targets) {
+        targets[0].setVisible(false);
     }
 
 }
@@ -123,7 +137,7 @@ const constants = (screenSize === 'lg') ? {
     logo2PaddingLeft: 20,
     logo2Scale: 0.2,
     scoreTextPaddingTop: 265,
-    scoreTextPaddingLeft: 380,
+    scoreTextPaddingLeft: 340,
     timerTextPaddingTop: 265,
     timerTextPaddingLeft: 1460,
     countdownMarginTop: 20,
@@ -166,11 +180,27 @@ const constants = (screenSize === 'lg') ? {
     leaderboardListItems: 10,
     leaderboardHeader_name: { x: 1100, y: 310 },
     leaderboardHeader_pts: { x: 1580, y: 310 },
-    leaderboardRanks: { x: 1010, y: 366 },
-    leaderboardName: { x: 1100, y: 366 },
-    leaderboardPoints: { x: 1580, y: 366 },
+    leaderboardRanks: { x: 1010, y: 366, displacement: 55, },
+    leaderboardName: { x: 1100, y: 366, displacement: 55, },
+    leaderboardPoints: { x: 1580, y: 366, displacement: 55, },
     gameHitZonePoints: [[170, 515], [1750, 515], [1930, 1080], [-10, 1080]],
     mainBgSections: ["../images/mainBg/2 top-mid.png", "../images/mainBg/3 mid.png", "../images/mainBg/4 bot.png"],
+    scoreOriginX: 0.5,
+    moleDisplacement: 130,
+    addLeaderboardEntryBg: "../images/desktopAddLeaderboardBg.png",
+    addLeaderboardEntryPopupBg: "../images/leaderboard-details.png",
+    addLeaderboardEntryPopupLocation: { x: 1920/2, y: 1080/2 },
+    addLeaderboardEntryPopupScale: 2.3,
+    skipBtnMarginLeft: 1250,
+    submitBtnMarginLeft: 750,
+    submitSkipBtnsMarginTop: 865,
+    submitBtnScale: 2.4,
+    submitBtnPointerOverTexture: "submitHover",
+    skipBtnScale: 2.4,
+    skipBtnPointerOverTexture: "skipHover",
+    inputsMarginLeft: 1070,
+    inputsMarginTop: 590,
+    addLeaderboardHTML: "../html/inputs/desktopAddLeaderboardEntry.html",
 } : {
     bg_main: "../images/mainBg/1m top.png",
     instructionsPopupMarginX: 50,
@@ -229,11 +259,27 @@ const constants = (screenSize === 'lg') ? {
     leaderboardListItems: 5,
     leaderboardHeader_name: { x: 180, y: 1000 },
     leaderboardHeader_pts: { x: 600, y: 1000 },
-    leaderboardRanks: { x: 110, y: 1060 },
-    leaderboardName: { x: 180, y: 1060 },
-    leaderboardPoints: { x: 600, y: 1060 },
+    leaderboardRanks: { x: 110, y: 1060, displacement: 55, },
+    leaderboardName: { x: 180, y: 1060, displacement: 55, },
+    leaderboardPoints: { x: 600, y: 1060, displacement: 55, },
     gameHitZonePoints: [[45, 510], [865, 510], [960, 1420], [-40, 1420]],
     mainBgSections: ["../images/mainBg/2m top mid.png", "../images/mainBg/3m mid.png", "../images/mainBg/4m bot mid.png", "../images/mainBg/5m bot.png"],
+    scoreOriginX: 1,
+    moleDisplacement: 160,
+    addLeaderboardEntryBg: "../images/mobileAddLeaderboardBg.jpg",
+    addLeaderboardEntryPopupBg: "../images/leaderboard-details-mobile.png",
+    addLeaderboardEntryPopupLocation: { x: 900/2, y: 1420/2 },
+    addLeaderboardEntryPopupScale: 1.3,
+    skipBtnMarginLeft: 650,
+    submitBtnMarginLeft: 325,
+    submitSkipBtnsMarginTop: 895,
+    submitBtnScale: 1.5,
+    submitBtnPointerOverTexture: "submitDown",
+    skipBtnScale: 1.5,
+    skipBtnPointerOverTexture: "skipDown",
+    inputsMarginLeft: 540,
+    inputsMarginTop: 740,
+    addLeaderboardHTML: "../html/inputs/mobileAddLeaderboardEntry.html",
 }
 
 // Initialise global game variables
@@ -244,6 +290,7 @@ var player = { // Holds information about the current player
     name: "",
     attempts: 0,
     score: 0,
+    email: "",
 };
 var countdown = { // Contains the time before play initiates, and the interval id is added later on
     time: 3,
@@ -289,6 +336,12 @@ function preload() {
     this.load.image("closeIdle", "../images/buttons/close-idle.png");
     this.load.image("closeHover", "../images/buttons/close-hovered.png");
     this.load.image("closeDown", "../images/buttons/close-clicked.png");
+    this.load.image("skipIdle", "../images/buttons/skip-idle.png");
+    this.load.image("skipHover", "../images/buttons/skip-hovered.png");
+    this.load.image("skipDown", "../images/buttons/skip-clicked.png");
+    this.load.image("submitIdle", "../images/buttons/submit-idle.png");
+    this.load.image("submitHover", "../images/buttons/submit-hovered.png");
+    this.load.image("submitDown", "../images/buttons/submit-clicked.png");
     this.load.image("hammerIdle", "../images/hammer-idle.png");
     this.load.image("hammerDown", "../images/hammer-smack.png");
     this.load.image("elf", "../images/moles/mole-elf.png");
@@ -299,6 +352,9 @@ function preload() {
     for (let i = 0; i < constants.mainBgSections.length; i ++) {
         this.load.image(`bg${i+1}`, constants.mainBgSections[i]);
     }
+    this.load.image("addLeaderboardEntryBg", constants.addLeaderboardEntryBg);
+    this.load.image("addLeaderboardEntryPopupBg", constants.addLeaderboardEntryPopupBg);
+    this.load.html("addLeaderboardInputs", constants.addLeaderboardHTML);
 }
 
 function create() {
@@ -317,14 +373,14 @@ function create() {
     // Create all popups
     popups = {
         instructions: this.add.popup(0, 0, initInstructionsPopup(this)),
+        addLeaderboardEntry: this.add.popup(0, 0, initAddLeaderboardDataPopup(this)),
     }
 
-    // loadStartScreen();
+    loadStartScreen();
 
-    Object.keys(screens).forEach(screen => screens[screen].setVisible(false));
-    Object.keys(popups).forEach(popup => popups[popup].setVisible(false));
-    screens["mainGame"].setVisible(true);
-    initialiseGame();
+    // Object.keys(screens).forEach(screen => screens[screen].setVisible(false));
+    // Object.keys(popups).forEach(popup => popups[popup].setVisible(false));
+    // gameOver(6969);
 
 }
 
@@ -334,6 +390,13 @@ function update() {
     if (Phaser.Geom.Polygon.Contains(screens["mainGame"]["gameZone"].input.hitArea, pointer.x, pointer.y)) {
         screens["mainGame"]["hammer"].x = pointer.x;
         screens["mainGame"]["hammer"].y = pointer.y;
+        if (pointer.isDown) {
+            screens["mainGame"]["hammer"].setTexture("hammerDown").setOrigin(0.35, 0.62);
+        } else {
+            screens["mainGame"]["hammer"].setTexture("hammerIdle").setOrigin(0.1, 0.5);
+        }
+    } else {
+        screens["mainGame"]["hammer"].setTexture("hammerIdle").setOrigin(0.1, 0.5);
     }
 
 }
@@ -402,10 +465,13 @@ function initMainGameChildren(scene) {
     objects["bg0"] = scene.add.image(0, 0, "bg_main").setOrigin(0);
 
     // Score text
-    objects["score"] = scene.add.text(constants.scoreTextPaddingLeft, constants.scoreTextPaddingTop, `${player.score}`, textStyles.score).setOrigin(1, 0);
+    objects["score"] = scene.add.text(constants.scoreTextPaddingLeft, constants.scoreTextPaddingTop, `${player.score}`, textStyles.score).setOrigin(constants.scoreOriginX, 0);
 
     // Time remaining
     objects["timeRemaining"] = scene.add.text(constants.timerTextPaddingLeft, constants.timerTextPaddingTop, `0:30`, textStyles.timer).setOrigin(0, 0);
+
+    objects["gameZone"] = scene.add.polygon(0, 0, constants.gameHitZonePoints).setOrigin(0)
+    .setInteractive({ hitArea: new Phaser.Geom.Polygon(constants.gameHitZonePoints), hitAreaCallback: Phaser.Geom.Polygon.Contains });
 
     // Create a mole at each hole
     constants.holeLocations.forEach((row, i) => {
@@ -418,9 +484,6 @@ function initMainGameChildren(scene) {
                 constants.moleCoordinates[rowNum*row.length + i][1],
                 setMoleTexture()
                 );
-
-            // When clicked, hide the mole and update the user's score
-            objects[`location${location[0]}${location[1]}`].on("pointerdown", () => { moleClicked(location) });
         });
 
         // Add the next piece of the background
@@ -430,49 +493,102 @@ function initMainGameChildren(scene) {
     // Hammer
     objects["hammer"] = scene.add.image(scene.center.x, scene.center.y, "hammerIdle").setOrigin(0.1, 0.5);
 
-    objects["gameZone"] = scene.add.polygon(0, 0, constants.gameHitZonePoints).setOrigin(0)
-    .setInteractive({ hitArea: new Phaser.Geom.Polygon(constants.gameHitZonePoints), hitAreaCallback: Phaser.Geom.Polygon.Contains })
-    .on("pointerdown", () => { objects["hammer"].setTexture("hammerDown").setOrigin(0.35, 0.62) })
-    .on("pointerup", () => { objects["hammer"].setTexture("hammerIdle").setOrigin(0.1, 0.5) });
-
     // Starting countdown
     objects["countdown"] = scene.add.text(scene.center.x, scene.center.y, `${countdown.time}`, textStyles.timerLg).setOrigin(0.5);
 
     return objects;
 }
 
-function initGameOverScreenChildren(scene) {
+function initAddLeaderboardDataPopup(scene) {
     var objects = {};
 
-    // API CALL - Leaderboard List
-    api.leaderboard_index().then(res => {
-        let ranks = res.data;
+    // Background
+    objects["bg"] = scene.add.image(0, 0, "addLeaderboardEntryBg").setOrigin(0).setInteractive();
 
-        // List Headers
-        objects["leaderboardNameHeader"] = scene.add.text(constants.leaderboardHeader_name.x, constants.leaderboardHeader_name.y, "NAME", textStyles.leaderboard).setOrigin(0, 0.5).setVisible(false);
-        objects["leaderboardPointsHeader"] = scene.add.text(constants.leaderboardHeader_pts.x, constants.leaderboardHeader_pts.y, "PTS", textStyles.leaderboard).setOrigin(0, 0.5).setVisible(false);
+    // Popup Background
+    objects["popupBg"] = scene.add.image(constants.addLeaderboardEntryPopupLocation.x, constants.addLeaderboardEntryPopupLocation.y, "addLeaderboardEntryPopupBg").setOrigin(0.5).setScale(constants.addLeaderboardEntryPopupScale);
 
-        // Loop through the top 10
-        for (let i = 0; i < constants.leaderboardListItems; i++) {
-            // If name is too long - cut into ellipsis
-            if (ranks[i]) {
-	            if (ranks[i].name.length > 10) {
-                    objects[`leaderboardRank${i+1}`] = scene.add.text(constants.leaderboardName.x, (55*i+1)+constants.leaderboardName.y, ranks[i].name.toUpperCase().substr(0, 10)+"...", textStyles.leaderboard).setOrigin(0, 0.5).setVisible(false);
-                }
-	            else {
-	                objects[`leaderboardRank${i+1}`] = scene.add.text(constants.leaderboardName.x, (55*i+1)+constants.leaderboardName.y, ranks[i].name.toUpperCase(), textStyles.leaderboard).setOrigin(0, 0.5).setVisible(false);
-                }
-                // Text - Rank & Score
-                objects[`leaderboardRankText${i+1}`] = scene.add.text(constants.leaderboardRanks.x, (55*i+1)+constants.leaderboardRanks.y, (i+1)+'.', textStyles.leaderboard).setOrigin(0, 0.5).setVisible(false);
-                objects[`leaderboardScore${i+1}`] = scene.add.text(constants.leaderboardPoints.x, (55*i+1)+constants.leaderboardPoints.y, ranks[i].score, textStyles.leaderboard).setOrigin(0, 0.5).setVisible(false);
+    // Input fields
+    objects["inputFields"] = scene.add.dom(constants.inputsMarginLeft, constants.inputsMarginTop).createFromCache("addLeaderboardInputs").setOrigin(0.5, 0.5);
+
+    objects["blockInputBgClick"] = scene.add.rectangle(objects["inputFields"].x, objects["inputFields"].y, objects["inputFields"].displayWidth*2.07, objects["inputFields"].displayHeight*2.07, 0xffffff, 0)
+    .setOrigin(objects["inputFields"].originX, objects["inputFields"].originY)
+    .setInteractive();
+
+    objects["bg"].on("pointerdown", () => { objects["inputFields"].getChildByName("name").blur(); objects["inputFields"].getChildByName("email").blur(); });
+
+    // Submit button
+    objects["submitBtn"] = scene.add.image(constants.submitBtnMarginLeft, constants.submitSkipBtnsMarginTop, "submitIdle").setScale(constants.submitBtnScale);
+    objects["submitBtn"].setInteractive({ useHandCursor: true })
+    .on("pointerover", () => { objects["submitBtn"].setTexture(constants.submitBtnPointerOverTexture) })
+    .on("pointerout", () => { objects["submitBtn"].setTexture("submitIdle") })
+    .on("pointerdown", () => { objects["submitBtn"].setTexture("submitDown") })
+    .on("pointerup", () => {
+        objects["submitBtn"].setTexture("submitHover");
+
+        var nameInput = objects["inputFields"].getChildByName("name");
+        var emailInput = objects["inputFields"].getChildByName("email");
+
+        nameInput.blur();
+        emailInput.blur();
+
+        emailInput.className = "";
+        nameInput.className = "";
+
+        if (emailInput.validity.valid && nameInput.validity.valid) {
+
+            player.name = nameInput.value;
+            player.email = emailInput.value;
+
+            // API CALL - Add leaderboard entry
+	        api.leaderboard_create({
+                name: player.name,
+	            email: player.email,
+	            score: player.score,
+	        }).then(res => {
+                alert(`Record added\nName: ${player.name}\nEmail: ${player.email}\nScore: ${player.score}`);
+	        });
+
+            refreshLeaderboard();
+
+            popups.addLeaderboardEntry.hide();
+
+        } else {
+            if (!emailInput.validity.valid) {
+                emailInput.className = "invalid";
             }
-            // screens["gameOverScreen"].add([objects[`leaderboardRank${i+1}`], objects[`leaderboardRankText${i+1}`], objects[`leaderboardScore${i+1}`]]);
+            if (!nameInput.validity.valid) {
+                nameInput.className = "invalid";
+            }
         }
-        // screens["gameOverScreen"].add([objects["leaderboardNameHeader"], objects["leaderboardPointsHeader"]]);
+
     });
 
+    // Skip button
+    objects["skipBtn"] = scene.add.image(constants.skipBtnMarginLeft, constants.submitSkipBtnsMarginTop, "skipIdle").setScale(constants.skipBtnScale);
+    objects["skipBtn"].setInteractive({ useHandCursor: true })
+    .on("pointerover", () => { objects["skipBtn"].setTexture(constants.skipBtnPointerOverTexture) })
+    .on("pointerout", () => { objects["skipBtn"].setTexture("skipIdle") })
+    .on("pointerdown", () => { objects["skipBtn"].setTexture("skipDown") })
+    .on("pointerup", () => { objects["skipBtn"].setTexture("skipHover"); refreshLeaderboard(); popups.addLeaderboardEntry.hide(); });
+
+    return objects;
+}
+
+function initGameOverScreenChildren(scene) {
+    var objects = {};
     // Background image
     objects["bg"] = scene.add.image(scene.center.x, scene.center.y, "gameOverBg").setOrigin(0.5);
+
+    // Leaderboard headers
+    objects[`leaderboardHeaderName`] = scene.add.text(constants.leaderboardHeader_name.x, constants.leaderboardHeader_name.y, `NAME`, textStyles.leaderboard).setOrigin(0, 0.5);
+    objects[`leaderboardHeaderPoints`] = scene.add.text(constants.leaderboardHeader_pts.x, constants.leaderboardHeader_pts.y, `PTS`, textStyles.leaderboard).setOrigin(0, 0.5);
+
+    for (let i = 0; i < constants.leaderboardListItems; i++) {
+        objects[`leaderboardRank${i+1}`] = scene.add.text(constants.leaderboardRanks.x, (constants.leaderboardRanks.displacement*i)+constants.leaderboardRanks.y, `${i+1}.`, textStyles.leaderboard).setOrigin(0, 0.5);
+        objects[`leaderboardName${i+1}`] = scene.add.text(constants.leaderboardName.x, (constants.leaderboardName.displacement*i)+constants.leaderboardName.y, ``, textStyles.leaderboard).setOrigin(0, 0.5);
+        objects[`leaderboardPts${i+1}`] = scene.add.text(constants.leaderboardPoints.x, (constants.leaderboardPoints.displacement*i)+constants.leaderboardPoints.y, ``, textStyles.leaderboard).setOrigin(0, 0.5);
+    }
 
     // Score
     objects["scoreText"] = scene.add.text(constants.finalScoreLocation.x, constants.finalScoreLocation.y, player.score, textStyles.finalScore).setOrigin(0.5);
@@ -501,9 +617,15 @@ function loadStartScreen() {
 }
 
 function initialiseGame() {
-    // Set game variables
-    player.name = player.name ?? "AAA";
+    // Reset game variables
     player.attempts ++;
+
+    player.score = 0;
+    timeRemaining = 30;
+    screens["mainGame"]["countdown"].setVisible(true);
+    screens["mainGame"]["countdown"].setText("3");
+    screens["mainGame"]["score"].setText(`${player.score}`);
+    screens["mainGame"]["timeRemaining"].setText(`0:30`);
 
     // Hide start and end screen and show the main game
     screens["introScreen"].setVisible(false);
@@ -511,6 +633,8 @@ function initialiseGame() {
     screens["mainGame"].setVisible(true);
 
     // Starts the countdown for play begin
+    countdown.time = 3;
+    hideAllMoles();
     countdown.timer = setInterval(() => {
         emitter.emit("startCountdown");
     }, 1000);
@@ -628,15 +752,11 @@ function stage4(step="init") {
 
 function gameOver(finalScore) {
     // Hide game screen and show game over
-    // API CALL - Leaderboard List
-    api.leaderboard_create({
-        name: String(Date.now()),
-        email: String(Date.now()+'@email.com'),
-        company: String('Company '+Date.now()),
-        score: Math.floor(Math.random() * 10000) + 1000,
-    }).then(res => {
-        alert('A record is randomly generated for the sake of data sample');
-    });
+    clearTimeout(curStageTimeout);
+
+    // Show the data input popup
+    popups["addLeaderboardEntry"].show();
+
     screens["mainGame"].setVisible(false);
     screens["gameOverScreen"].setVisible(true);
     screens["gameOverScreen"]["scoreText"].setText(finalScore);
@@ -654,7 +774,7 @@ function updateTimeRemaining() {
         visibleMoles.forEach(mole => screens["mainGame"][`location${mole[0]}${mole[1]}`].setVisible(false)); // Hide all visible moles
         visibleMoles = []; // reset array
         clearInterval(timer); // Stop countdown timer
-        clearInterval(curStageTimeout); // Stop game execution
+        clearTimeout(curStageTimeout); // Stop game execution
         gameOver(player.score); // Show game end screen
     }
 }
@@ -705,19 +825,12 @@ function setMoleTexture() {
 }
 
 function moleClicked(mole) {
-    clearTimeout(curStageTimeout); // Kill current stage execution
-    hideMole(mole);
-    updateScore(points[screens["mainGame"][`location${mole[0]}${mole[1]}`].fillColor]); // Update score based on point value of texture
-    // Restart stage execution
-    if (timeRemaining > constants.stage1End) {
-        stage1();
-    } else if (timeRemaining > constants.stage2End) {
-        stage2();
-    } else if (timeRemaining > constants.stage3End) {
-        stage3();
-    } else {
-        stage4();
-    }
+    // updateplayer score, set mole to not visible (can keep the timeout though possibly, will test and see)
+
+    updateScore(points[mole.texture.key]);
+
+    mole.setVisible(false);
+
 }
 
 function updateScore(increment) {
@@ -770,10 +883,31 @@ function hideMole(target=[]) {
 
 }
 
-function hammerDownDesktop() {
-
+function hideAllMoles() {
+    visibleMoles.forEach(mole => {
+        screens["mainGame"][`location${mole[0]}${mole[1]}`].hide("reset");
+        screens["mainGame"][`location${mole[0]}${mole[1]}`].setVisible(false);
+    });
+    visibleMoles = [];
 }
 
-function hammerDownMobile() {
-
+function refreshLeaderboard() {
+    // API CALL - Get leaderboard data
+    api.leaderboard_index().then(res => {
+        let ranks = res.data;
+        // Loop through the required number of entries
+        for (let i = 0; i < constants.leaderboardListItems; i++) {
+            // If name is too long - cut into ellipsis
+            if (ranks[i]) {
+                if (ranks[i].name.length > 10) {
+                    screens["gameOverScreen"][`leaderboardName${i+1}`].setText(ranks[i].name.toUpperCase().substr(0, 10)+"...");
+                }
+                else {
+                    screens["gameOverScreen"][`leaderboardName${i+1}`].setText(ranks[i].name.toUpperCase());
+                }
+                // Text - Rank & Score
+                screens["gameOverScreen"][`leaderboardPts${i+1}`].setText(ranks[i].score);
+            }
+        }
+    });
 }

@@ -19,7 +19,6 @@ class Leaderboard extends Model
     protected $fillable = [
         'name',
         'email',
-        'company',
         'score',
     ];
 }
