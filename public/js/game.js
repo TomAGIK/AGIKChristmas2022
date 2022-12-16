@@ -62,6 +62,9 @@ class Mole extends Phaser.GameObjects.Image {
             this.moveDownTimeOut.play();
         } else if (reason === "reset") {
             this.moveDownReset.play();
+        } else if(reason === "whacked") {
+            audio.effects.successfulWhack.play();
+            this.setVisible(false);
         }
     }
 
@@ -120,6 +123,9 @@ const config = {
         preload: preload,
         create: create,
         update: update
+    },
+    audio: {
+        disableWebAudio: true
     },
 };
 
@@ -191,8 +197,8 @@ const constants = (screenSize === 'lg') ? {
     addLeaderboardEntryPopupBg: "../images/leaderboard-details.png",
     addLeaderboardEntryPopupLocation: { x: 1920/2, y: 1080/2 },
     addLeaderboardEntryPopupScale: 2.3,
-    skipBtnMarginLeft: 1250,
-    submitBtnMarginLeft: 750,
+    skipBtnMarginLeft: 675,
+    submitBtnMarginLeft: 1225,
     submitSkipBtnsMarginTop: 865,
     submitBtnScale: 2.4,
     submitBtnPointerOverTexture: "submitHover",
@@ -270,8 +276,8 @@ const constants = (screenSize === 'lg') ? {
     addLeaderboardEntryPopupBg: "../images/leaderboard-details-mobile.png",
     addLeaderboardEntryPopupLocation: { x: 900/2, y: 1420/2 },
     addLeaderboardEntryPopupScale: 1.3,
-    skipBtnMarginLeft: 650,
-    submitBtnMarginLeft: 325,
+    skipBtnMarginLeft: 290,
+    submitBtnMarginLeft: 620,
     submitSkipBtnsMarginTop: 895,
     submitBtnScale: 1.5,
     submitBtnPointerOverTexture: "submitDown",
@@ -286,6 +292,7 @@ const constants = (screenSize === 'lg') ? {
 var api = new API;
 var screens = {}; // Contains all the game screens
 var popups = {}; // Contains all the game popups
+var audio = {}; // Contains all the sounds used in the game
 var player = { // Holds information about the current player
     name: "",
     attempts: 0,
@@ -354,7 +361,24 @@ function preload() {
     }
     this.load.image("addLeaderboardEntryBg", constants.addLeaderboardEntryBg);
     this.load.image("addLeaderboardEntryPopupBg", constants.addLeaderboardEntryPopupBg);
+
+    // Load entry boxes
     this.load.html("addLeaderboardInputs", constants.addLeaderboardHTML);
+
+    // Load audio
+    this.load.audio({
+        key: "gameMusic",
+        url: [ "../audio/Christmas Rock.mp3" ]
+    });
+    this.load.audio({
+        key: "successfulWhack",
+        url: [ "../audio/Character Gets Whacked-snowy.mp3" ]
+    });
+    this.load.audio({
+        key: "unsuccessfulWhack",
+        url: [ "../audio/Single Hammer Hit on Wood 01.mp3" ]
+    });
+
 }
 
 function create() {
@@ -362,6 +386,9 @@ function create() {
     emitter = new Phaser.Events.EventEmitter();
     emitter.on("updateTimeRemaining", updateTimeRemaining);
     emitter.on("startCountdown", updateCountdown);
+
+    // Create all audios
+    audio = initAudio(this);
 
     // Create screen objects and children
     screens = {
@@ -471,7 +498,8 @@ function initMainGameChildren(scene) {
     objects["timeRemaining"] = scene.add.text(constants.timerTextPaddingLeft, constants.timerTextPaddingTop, `0:30`, textStyles.timer).setOrigin(0, 0);
 
     objects["gameZone"] = scene.add.polygon(0, 0, constants.gameHitZonePoints).setOrigin(0)
-    .setInteractive({ hitArea: new Phaser.Geom.Polygon(constants.gameHitZonePoints), hitAreaCallback: Phaser.Geom.Polygon.Contains });
+    .setInteractive({ hitArea: new Phaser.Geom.Polygon(constants.gameHitZonePoints), hitAreaCallback: Phaser.Geom.Polygon.Contains })
+    .on("pointerdown", () => { audio.effects.unsuccessfulWhack.play() });
 
     // Create a mole at each hole
     constants.holeLocations.forEach((row, i) => {
@@ -604,10 +632,6 @@ function initGameOverScreenChildren(scene) {
     return objects;
 }
 
-function initLeaderboard() {
-    // To do
-}
-
 function loadStartScreen() {
     // Hide everything except the start screen
     Object.keys(screens).forEach(screen => screens[screen].setVisible(false));
@@ -646,6 +670,10 @@ function startGameplay() {
     timer = setInterval(() => {
         emitter.emit("updateTimeRemaining");
     }, 1000);
+
+    // Play game music
+    audio.music.gameMusic.play();
+    audio.music.gameMusic.fadeIn.play();
 
     // Show one mole at a time
     stage1();
@@ -829,7 +857,7 @@ function moleClicked(mole) {
 
     updateScore(points[mole.texture.key]);
 
-    mole.setVisible(false);
+    mole.hide("whacked");
 
 }
 
@@ -910,4 +938,24 @@ function refreshLeaderboard() {
             }
         }
     });
+}
+
+function initAudio(scene) {
+    var audio = { music: {}, effects: {} }
+
+    // Don't stop the music on un-focus
+    scene.sound.pauseOnBlur = false;
+
+    audio.music["gameMusic"] = scene.sound.add("gameMusic", { loop: false, volume: 0 });
+    audio.music.gameMusic.fadeIn = scene.tweens.add({
+        targets: audio.music.gameMusic,
+        volume: 0.4,
+        duration: 2000,
+    });
+
+    audio.effects["successfulWhack"] = scene.sound.add("successfulWhack", { loop: false });
+
+    audio.effects["unsuccessfulWhack"] = scene.sound.add("unsuccessfulWhack", { loop: false, volume: 0.6 });
+
+    return audio;
 }
