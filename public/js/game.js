@@ -34,22 +34,22 @@ class Mole extends Phaser.GameObjects.Image {
         this.visibleMolesLocation;
         this.moveUp = scene.tweens.add({
             targets: this,
-            y: this.endY,
-            duration: 500,
+            props: {
+                y: { from: this.startY, to: this.endY, duration: 500 }
+            },
             paused: true,
         });
         this.moveDownTimeOut = scene.tweens.add({
             targets: this,
-            y: this.startY,
-            duration: 500,
+            props: {
+                y: { from: this.endY, to: this.startY, duration: 500 }
+            },
             paused: true,
             onComplete: this.timeoutCallback,
         });
     }
 
     show() {
-        this.setVisible(true);
-        visibleMoles.push(this);
         this.setTexture(setMoleTexture());
         this.moveUp.play();
 
@@ -71,6 +71,7 @@ class Mole extends Phaser.GameObjects.Image {
         this.visibleTimeout = setTimeout(() => {
             this.hide("timedOut");
         }, timeout);
+        this.setVisible(true);
     }
 
     hide(reason) {
@@ -78,37 +79,29 @@ class Mole extends Phaser.GameObjects.Image {
             this.moveDownTimeOut.play();
         } else if (reason === "reset") {
             this.reset();
+            this.setVisible(false);
         } else if(reason === "whacked") {
             audio.effects.successfulWhack.play();
+            this.reset();
             this.setVisible(false);
+            this.visibleTimeout = setTimeout(() => {
+                showMole();
+            }, getRandomNumber(0.2, 0.5, 1)*1000);
         }
     }
 
-    timeoutCallback(tween, targets) {
-        showMole();
+    timeoutCallback(tween, targets, showAnother) {
         targets[0].setVisible(false);
-        visibleMoles.splice(targets[0].getVisibleMolesLocation(), 1);
+        showMole();
     }
 
     reset() {
-        if (this.visible) {
-            this.setVisible(false);
-            this.setY(this.startY);
-            this.moveUp.stop();
-            // this.moveUp.seek(0);
-            clearTimeout(this.visibleTimeout);
-            this.moveDownTimeOut.stop();
-            // this.moveDownTimeOut.seek(0);
-        }
-    }
-
-    getVisibleMolesLocation() {
-        for (let i = 0; i < visibleMoles.length; i++) {
-            if (visibleMoles[i] === this) {
-                this.visibleMolesLocation = i;
-            }
-        }
-        return this.visibleMolesLocation;
+        clearTimeout(this.visibleTimeout);
+        if (!this.moveDownTimeOut.hasStarted) { this.moveDownTimeOut.play(); }
+        this.moveDownTimeOut.stop();
+        if (!this.moveUp.hasStarted) { this.moveUp.play(); }
+        this.moveUp.stop();
+        this.setPosition(this.x, this.startY);
     }
 
 }
@@ -347,7 +340,6 @@ var points = { // The different textures for the moles, and the corresponding po
     "santa": -200,
 }
 var visibleMoles = []; // Array of all moles currently visible
-var curStageTimeout; // Will hold the timeout ID for stage 1
 var curStage = 0;
 
 const game = new Phaser.Game(config);
@@ -459,7 +451,6 @@ function update() {
     } else {
         screens["mainGame"]["hammer"].setTexture("hammerIdle").setOrigin(0.1, 0.5);
     }
-
 }
 
 function initIntroScreenChildren(scene) {
@@ -684,6 +675,8 @@ function initialiseGame() {
     screens["mainGame"]["score"].setText(`${player.score}`);
     screens["mainGame"]["timeRemaining"].setText(`0:30`);
 
+    // Object.keys(screens["mainGame"]).filter(key => key.includes("location")).forEach(mole => screens["mainGame"][mole].hide("timedOut")); // Hide all visible moles
+
     // Hide start and end screen and show the main game
     screens["introScreen"].setVisible(false);
     screens["gameOverScreen"].setVisible(false);
@@ -754,10 +747,9 @@ function stage4() {
 
 function gameOver(finalScore) {
     // Hide game screen and show game over
-    clearTimeout(timer)
+    clearTimeout(timer);
 
-    visibleMoles.forEach(mole => mole.hide("reset")); // Hide all visible moles
-    visibleMoles = [];
+    Object.keys(screens["mainGame"]).filter(key => key.includes("location")).forEach(mole => screens["mainGame"][mole].hide("reset")); // Hide all visible moles
 
     // Show the data input popup
     popups["addLeaderboardEntry"].show();
@@ -851,7 +843,9 @@ function showMole() {
     do { // Get random coordinates
         var x = getRandomInt(0, constants.holeLocations[0].length-1);
         var y = getRandomInt(0, constants.holeLocations.length-1);
-    } while (visibleMoles.filter(mole => screens["mainGame"][`location${x}${y}`] === mole).length); // check if mole at this location is visible already
+        // var x = 0;
+        // var y = 0;
+    } while (screens["mainGame"][`location${x}${y}`].visible); // check if mole at this location is visible already
 
     // // Update mole texture -> MOVE TO MOLE CLASS
     // screens["mainGame"][`location${x}${y}`].setTexture(setMoleTexture());
@@ -860,40 +854,6 @@ function showMole() {
     // visibleMoles.push([x, y]); // SHOULD BE IN MOLE CLASS
     screens["mainGame"][`location${x}${y}`].show();
 
-}
-
-function hideMole(target=[]) {
-    // Hides the target mole if given, otherwise hides the mole
-    // that has been shown for the longest time
-
-    var moleToHide;
-
-    if (target.length) {
-        var indexToHide;
-        moleToHide = target;
-        visibleMoles.every((mole, i) => {
-            if (mole.join() === target.join()) {
-                indexToHide = i;
-                return false;
-            } else {
-                return true;
-            }
-        });
-        visibleMoles.splice(indexToHide, 1);
-    } else {
-        moleToHide = visibleMoles[0];
-        screens["mainGame"][`location${moleToHide[0]}${moleToHide[1]}`].hide("timedOut");
-    }
-
-
-}
-
-function hideAllMoles() {
-    visibleMoles.forEach(mole => {
-        screens["mainGame"][`location${mole[0]}${mole[1]}`].hide("reset");
-        screens["mainGame"][`location${mole[0]}${mole[1]}`].setVisible(false);
-    });
-    visibleMoles = [];
 }
 
 function refreshLeaderboard() {
