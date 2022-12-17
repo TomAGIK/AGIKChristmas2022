@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>AGuyIKnow Christmas 2022</title>
+        <title>AGuyIKnow Christmas Bash 2022</title>
 
         <link rel="stylesheet" href="/css/app.css">
 
