@@ -207,6 +207,7 @@ const constants = (screenSize === 'lg') ? {
     inputsMarginLeft: 1070,
     inputsMarginTop: 590,
     addLeaderboardHTML: "../html/inputs/desktopAddLeaderboardEntry.html",
+    hammerScale: 0.75,
 } : {
     bg_main: "../images/mainBg/1m top.png",
     instructionsPopupMarginX: 50,
@@ -286,6 +287,7 @@ const constants = (screenSize === 'lg') ? {
     inputsMarginLeft: 540,
     inputsMarginTop: 740,
     addLeaderboardHTML: "../html/inputs/mobileAddLeaderboardEntry.html",
+    hammerScale: 0.6,
 }
 
 // Initialise global game variables
@@ -519,7 +521,7 @@ function initMainGameChildren(scene) {
     });
 
     // Hammer
-    objects["hammer"] = scene.add.image(scene.center.x, scene.center.y, "hammerIdle").setOrigin(0.1, 0.5);
+    objects["hammer"] = scene.add.image(scene.center.x, scene.center.y, "hammerIdle").setOrigin(0.1, 0.5).setScale(constants.hammerScale);
 
     // Starting countdown
     objects["countdown"] = scene.add.text(scene.center.x, scene.center.y, `${countdown.time}`, textStyles.timerLg).setOrigin(0.5);
