@@ -189,7 +189,7 @@ const constants = (screenSize === 'lg') ? {
     leaderboardRanks: { x: 1010, y: 366, displacement: 55, },
     leaderboardName: { x: 1100, y: 366, displacement: 55, },
     leaderboardPoints: { x: 1580, y: 366, displacement: 55, },
-    gameHitZonePoints: [[170, 515], [1750, 515], [1930, 1080], [-10, 1080]],
+    gameHitZonePoints: [[200, 435], [1720, 435], [1930, 1080], [-10, 1080]],
     mainBgSections: ["../images/mainBg/2 top-mid.png", "../images/mainBg/3 mid.png", "../images/mainBg/4 bot.png"],
     scoreOriginX: 0.5,
     moleDisplacement: 130,
