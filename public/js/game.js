@@ -30,6 +30,8 @@ class Mole extends Phaser.GameObjects.Image {
         this.endY = y - constants.moleDisplacement;
         this.setScale(constants.moleScale).setInteractive({ useHandCursor: false }).setVisible(false);
         this.on("pointerdown", () => { moleClicked(this) });
+        this.visibleTimeout;
+        this.visibleMolesLocation;
         this.moveUp = scene.tweens.add({
             targets: this,
             y: this.endY,
@@ -41,41 +43,72 @@ class Mole extends Phaser.GameObjects.Image {
             y: this.startY,
             duration: 500,
             paused: true,
-            onComplete: this.hideCallback,
-        });
-        this.moveDownReset = scene.tweens.add({
-            targets: this,
-            y: this.startY,
-            duration: 10,
-            paused: true,
-            onComplete: this.resetCallback,
+            onComplete: this.timeoutCallback,
         });
     }
 
     show() {
         this.setVisible(true);
+        visibleMoles.push(this);
+        this.setTexture(setMoleTexture());
         this.moveUp.play();
+
+        switch(curStage) {
+            case 1:
+                var timeout = getRandomNumber(0.75, 1.5, 2)*1000;
+                break;
+            case 2:
+                var timeout = getRandomNumber(0.6, 1.35, 2)*1000;
+                break;
+            case 3:
+                var timeout = getRandomNumber(0.65, 0.75, 2)*1000;
+                break;
+            case 4:
+                var timeout = getRandomNumber(0.5, 0.7, 2)*1000;
+                break;
+        }
+
+        this.visibleTimeout = setTimeout(() => {
+            this.hide("timedOut");
+        }, timeout);
     }
 
     hide(reason) {
         if (reason === "timedOut") {
             this.moveDownTimeOut.play();
         } else if (reason === "reset") {
-            this.moveDownReset.play();
+            this.reset();
         } else if(reason === "whacked") {
             audio.effects.successfulWhack.play();
             this.setVisible(false);
         }
     }
 
-    hideCallback(tween, targets) {
+    timeoutCallback(tween, targets) {
         showMole();
         targets[0].setVisible(false);
-        visibleMoles.shift();
+        visibleMoles.splice(targets[0].getVisibleMolesLocation(), 1);
     }
 
-    resetCallback(tween, targets) {
-        targets[0].setVisible(false);
+    reset() {
+        if (this.visible) {
+            this.setVisible(false);
+            this.setY(this.startY);
+            this.moveUp.stop();
+            // this.moveUp.seek(0);
+            clearTimeout(this.visibleTimeout);
+            this.moveDownTimeOut.stop();
+            // this.moveDownTimeOut.seek(0);
+        }
+    }
+
+    getVisibleMolesLocation() {
+        for (let i = 0; i < visibleMoles.length; i++) {
+            if (visibleMoles[i] === this) {
+                this.visibleMolesLocation = i;
+            }
+        }
+        return this.visibleMolesLocation;
     }
 
 }
@@ -303,7 +336,8 @@ var countdown = { // Contains the time before play initiates, and the interval i
     time: 3,
 }
 var timer; // Timer interval id is assigned to this
-var timeRemaining = 30; // Time limit on the game
+var timeLimit = 30; // Time limit on the game
+var timeRemaining;
 var emitter; // Variable to hold the event emitter for the game
 var points = { // The different textures for the moles, and the corresponding point worth of each
     "reindeer": 50,
@@ -312,9 +346,9 @@ var points = { // The different textures for the moles, and the corresponding po
     "gram": 300,
     "santa": -200,
 }
-
-var visibleMoles = []; // Array of the locations of all moles currently visible
+var visibleMoles = []; // Array of all moles currently visible
 var curStageTimeout; // Will hold the timeout ID for stage 1
+var curStage = 0;
 
 const game = new Phaser.Game(config);
 
@@ -643,9 +677,8 @@ function loadStartScreen() {
 function initialiseGame() {
     // Reset game variables
     player.attempts ++;
-
     player.score = 0;
-    timeRemaining = 30;
+    timeRemaining = timeLimit;
     screens["mainGame"]["countdown"].setVisible(true);
     screens["mainGame"]["countdown"].setText("3");
     screens["mainGame"]["score"].setText(`${player.score}`);
@@ -658,7 +691,6 @@ function initialiseGame() {
 
     // Starts the countdown for play begin
     countdown.time = 3;
-    hideAllMoles();
     countdown.timer = setInterval(() => {
         emitter.emit("startCountdown");
     }, 1000);
@@ -680,107 +712,52 @@ function startGameplay() {
 
 }
 
-function stage1(step="init") {
+function stage1() {
 
-    // Set random display time
-    var showForTime = getRandomNumber(1, 2.1, 1)*1000;
+    curStage = 1;
+    showMole();
 
-    if(step === "init") {
-        // Show first mole and run next step
-        showMole();
-        curStageTimeout = setTimeout(() => {
-            stage1(1);
-        }, showForTime);
-    } else {
-        // hideMole will show a new mole once the moleToHide is hidden
-        hideMole();
-
-        // Run stage 2 at appropriate time
-        curStageTimeout = setTimeout(() => {
-            (timeRemaining > constants.stage1End) ? stage1(1) : stage2();
-        }, showForTime + 1000);
-    }
+    setTimeout(() => {
+        stage2();
+    }, (timeLimit-constants.stage1End)*1000);
 
 }
 
-function stage2(step="init") {
-    // Set random display time
-    // -> moles will be shown for a total of showForTime*2 (min: 1s max: 1.5s)
-    var showForTime = getRandomNumber(0.5, 0.75, 2)*1000;
+function stage2() {
 
-    if (step === "init") {
-        // Add second mole and run next step
-        showMole();
-        curStageTimeout = setTimeout(() => {
-            stage2(1)
-        }, showForTime);
-    } else if (step === 1) {
+    curStage = 2;
+    showMole();
 
-        // hideMole will show a new mole once the moleToHide is hidden
-        hideMole();
-
-        // Run stage 3 at appropriate time
-        curStageTimeout = setTimeout(() => {
-            (timeRemaining > constants.stage2End) ? stage2(1) : stage3();
-        }, showForTime + 1000);
-    }
+    setTimeout(() => {
+        stage3();
+    }, (constants.stage1End-constants.stage2End)*1000);
 
 }
 
-function stage3(step="init") {
-    // Set random display time
-    // -> moles will be shown for a total of showForTime*3 (min: 0.99s max: 1.2s)
-    var showForTime = getRandomNumber(0.33, 0.6, 2)*1000;
+function stage3() {
 
-    if (step === "init") {
-        // Add third mole and run next step
-        showMole();
-        if (visibleMoles.length < 3) { // Show extra mole if one gets clicked right as time ticks over
-            showMole();
-        }
-        curStageTimeout = setTimeout(() => {
-            stage3(1)
-        }, showForTime);
-    } else if (step === 1) {
+    curStage = 3;
+    showMole();
 
-        // hideMole will show a new mole once the moleToHide is hidden
-        hideMole();
+    setTimeout(() => {
+        stage4();
+    }, (constants.stage2End-constants.stage3End)*1000);
 
-        // Run stage 4 at appropriate time
-        curStageTimeout = setTimeout(() => {
-            (timeRemaining > constants.stage3End) ? stage3(1) : stage4();
-        }, showForTime + 1000);
-    }
 }
 
-function stage4(step="init") {
-    // Set random display time
-    // -> moles will be shown for a total of showForTime*4 (min: 0.25s max: 0.75s)
-    var showForTime = getRandomNumber(0.25, 0.25, 2)*1000;
+function stage4() {
 
-    if (step === "init") {
-        // Add fourth mole and run next step
-        showMole();
-        if (visibleMoles.length < 3) { // Show extra mole if one gets clicked right as time ticks over
-            showMole();
-        }
-        curStageTimeout = setTimeout(() => {
-            stage4(1)
-        }, 500);
-    } else if (step === 1) {
-        // hideMole will show a new mole once the moleToHide is hidden
-        hideMole();
+    curStage = 4;
+    showMole();
 
-        // Run stage 4 at appropriate time
-        curStageTimeout = setTimeout(() => {
-            stage4(1);
-        }, showForTime + 1000);
-    }
 }
 
 function gameOver(finalScore) {
     // Hide game screen and show game over
-    clearTimeout(curStageTimeout);
+    clearTimeout(timer)
+
+    visibleMoles.forEach(mole => mole.hide("reset")); // Hide all visible moles
+    visibleMoles = [];
 
     // Show the data input popup
     popups["addLeaderboardEntry"].show();
@@ -799,10 +776,10 @@ function updateTimeRemaining() {
         screens["mainGame"].timeRemaining.setText(`0:0${timeRemaining}`);
     } else {
         screens["mainGame"].timeRemaining.setText(`0:00`); // Update display
-        visibleMoles.forEach(mole => screens["mainGame"][`location${mole[0]}${mole[1]}`].setVisible(false)); // Hide all visible moles
-        visibleMoles = []; // reset array
-        clearInterval(timer); // Stop countdown timer
-        clearTimeout(curStageTimeout); // Stop game execution
+        // visibleMoles.forEach(mole => mole.hide("reset")); // Hide all visible moles
+        // visibleMoles = []; // reset array
+        // clearInterval(timer); // Stop countdown timer
+        // clearTimeout(curStageTimeout); // Stop game execution
         gameOver(player.score); // Show game end screen
     }
 }
@@ -874,13 +851,13 @@ function showMole() {
     do { // Get random coordinates
         var x = getRandomInt(0, constants.holeLocations[0].length-1);
         var y = getRandomInt(0, constants.holeLocations.length-1);
-    } while (visibleMoles.filter(coords => coords.join() === [x, y].join()).length); // check if mole at this location is visible already
+    } while (visibleMoles.filter(mole => screens["mainGame"][`location${x}${y}`] === mole).length); // check if mole at this location is visible already
 
-    // Update mole texture
-    screens["mainGame"][`location${x}${y}`].setTexture(setMoleTexture());
+    // // Update mole texture -> MOVE TO MOLE CLASS
+    // screens["mainGame"][`location${x}${y}`].setTexture(setMoleTexture());
 
     // Set mole to visible
-    visibleMoles.push([x, y]);
+    // visibleMoles.push([x, y]); // SHOULD BE IN MOLE CLASS
     screens["mainGame"][`location${x}${y}`].show();
 
 }
