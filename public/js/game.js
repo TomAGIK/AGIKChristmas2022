@@ -222,13 +222,13 @@ const constants = (screenSize === 'lg') ? {
     addLeaderboardEntryBg: "../images/desktopAddLeaderboardBg.png",
     addLeaderboardEntryPopupBg: "../images/leaderboard-details.png",
     addLeaderboardEntryPopupLocation: { x: 1920/2, y: 1080/2 },
-    addLeaderboardEntryPopupScale: 2.3,
+    addLeaderboardEntryPopupScale: 0.9583,
     skipBtnMarginLeft: 675,
     submitBtnMarginLeft: 1225,
     submitSkipBtnsMarginTop: 865,
-    submitBtnScale: 2.4,
+    submitBtnScale: 1,
     submitBtnPointerOverTexture: "submitHover",
-    skipBtnScale: 2.4,
+    skipBtnScale: 1,
     skipBtnPointerOverTexture: "skipHover",
     inputsMarginLeft: 1070,
     inputsMarginTop: 590,
@@ -302,13 +302,13 @@ const constants = (screenSize === 'lg') ? {
     addLeaderboardEntryBg: "../images/mobileAddLeaderboardBg.jpg",
     addLeaderboardEntryPopupBg: "../images/leaderboard-details-mobile.png",
     addLeaderboardEntryPopupLocation: { x: 900/2, y: 1420/2 },
-    addLeaderboardEntryPopupScale: 1.3,
+    addLeaderboardEntryPopupScale: 0.5417,
     skipBtnMarginLeft: 290,
     submitBtnMarginLeft: 620,
     submitSkipBtnsMarginTop: 895,
-    submitBtnScale: 1.5,
+    submitBtnScale: 0.625,
     submitBtnPointerOverTexture: "submitDown",
-    skipBtnScale: 1.5,
+    skipBtnScale: 0.625,
     skipBtnPointerOverTexture: "skipDown",
     inputsMarginLeft: 540,
     inputsMarginTop: 740,
@@ -431,11 +431,11 @@ function create() {
         addLeaderboardEntry: this.add.popup(0, 0, initAddLeaderboardDataPopup(this)),
     }
 
-    loadStartScreen();
+    // loadStartScreen();
 
-    // Object.keys(screens).forEach(screen => screens[screen].setVisible(false));
-    // Object.keys(popups).forEach(popup => popups[popup].setVisible(false));
-    // gameOver(6969);
+    Object.keys(screens).forEach(screen => screens[screen].setVisible(false));
+    Object.keys(popups).forEach(popup => popups[popup].setVisible(false));
+    gameOver(6969);
 
 }
 
