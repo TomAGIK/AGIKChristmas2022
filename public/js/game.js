@@ -318,6 +318,7 @@ function preload() {
     this.center = { x: this.gameWidth/2, y: this.gameHeight/2 };
 
     // Load images
+    this.load.atlas("snowBlast", "../animations/snow-blast-web-23frames.png", "../animations/snowBlast.json");
     this.load.image("logo", "../images/Logo.png");
     this.load.image("startScreenBg", constants.startScreenBg);
     this.load.image("instructionsBg", constants.instructionsBg);
