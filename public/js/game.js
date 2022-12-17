@@ -413,17 +413,24 @@ function create() {
 
 function update() {
     var pointer = this.input.activePointer;
+    var canvasStyles = this.sys.canvas.style;
 
-    if (Phaser.Geom.Polygon.Contains(screens["mainGame"]["gameZone"].input.hitArea, pointer.x, pointer.y)) {
-        screens["mainGame"]["hammer"].x = pointer.x;
-        screens["mainGame"]["hammer"].y = pointer.y;
-        if (pointer.isDown) {
-            screens["mainGame"]["hammer"].setTexture("hammerDown").setOrigin(0.35, 0.62);
-        } else {
-            screens["mainGame"]["hammer"].setTexture("hammerIdle").setOrigin(0.1, 0.5);
-        }
-    } else {
-        screens["mainGame"]["hammer"].setTexture("hammerIdle").setOrigin(0.1, 0.5);
+
+
+    if (screens.mainGame.visible) {
+        if (Phaser.Geom.Polygon.Contains(screens["mainGame"]["gameZone"].input.hitArea, pointer.x, pointer.y)) {
+                screens["mainGame"]["hammer"].x = pointer.x;
+                screens["mainGame"]["hammer"].y = pointer.y;
+                canvasStyles.cursor = "none";
+                if (pointer.isDown) {
+                    screens["mainGame"]["hammer"].setTexture("hammerDown").setOrigin(0.35, 0.62);
+                } else {
+                    screens["mainGame"]["hammer"].setTexture("hammerIdle").setOrigin(0.1, 0.5);
+                }
+            } else {
+                screens["mainGame"]["hammer"].setTexture("hammerIdle").setOrigin(0.1, 0.5);
+                canvasStyles.cursor = "default";
+            }
     }
 
 }
@@ -573,8 +580,6 @@ function initAddLeaderboardDataPopup(scene) {
                 name: player.name,
 	            email: player.email,
 	            score: player.score,
-	        }).then(res => {
-                alert(`Record added\nName: ${player.name}\nEmail: ${player.email}\nScore: ${player.score}`);
 	        });
 
             refreshLeaderboard();
