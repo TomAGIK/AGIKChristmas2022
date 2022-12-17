@@ -22,12 +22,22 @@ import { PopupPlugin } from "./classes/plugins/Popup.js";
 
 // Mole class specific to this game
 class Mole extends Phaser.GameObjects.Image {
-    constructor(scene, x, y, key) {
+    constructor(scene, x, y, key, group) {
         super(scene, x, y, key);
         scene.add.existing(this);
         this.scene = scene;
+        this.group = group;
         this.startY = y;
         this.endY = y - constants.moleDisplacement;
+
+        this.whackedAnim = scene.add.sprite(this.x, this.endY, "snowBlast", "0").setScale(constants.animationScale).setDepth(1);
+        this.whackedAnim.anims.create({
+            key: "whacked",
+            frames: animations.snowBlast.frames,
+            repeat: 0,
+            frameRate: 48,
+        });
+
         this.setScale(constants.moleScale).setInteractive({ useHandCursor: false }).setVisible(false);
         this.on("pointerdown", () => { moleClicked(this) });
         this.visibleTimeout;
@@ -82,6 +92,7 @@ class Mole extends Phaser.GameObjects.Image {
             this.setVisible(false);
         } else if(reason === "whacked") {
             audio.effects.successfulWhack.play();
+            this.whackedAnim.play("whacked");
             this.reset();
             this.setVisible(false);
             this.visibleTimeout = setTimeout(() => {
@@ -234,6 +245,7 @@ const constants = (screenSize === 'lg') ? {
     inputsMarginTop: 590,
     addLeaderboardHTML: "../html/inputs/desktopAddLeaderboardEntry.html",
     hammerScale: 0.75,
+    animationScale: 18,
 } : {
     bg_main: "../images/mainBg/1m top.png",
     instructionsPopupMarginX: 50,
@@ -314,6 +326,7 @@ const constants = (screenSize === 'lg') ? {
     inputsMarginTop: 740,
     addLeaderboardHTML: "../html/inputs/mobileAddLeaderboardEntry.html",
     hammerScale: 0.6,
+    animationScale: 15,
 }
 
 // Initialise global game variables
@@ -321,6 +334,7 @@ var api = new API;
 var screens = {}; // Contains all the game screens
 var popups = {}; // Contains all the game popups
 var audio = {}; // Contains all the sounds used in the game
+var animations = {};
 var player = { // Holds information about the current player
     name: "",
     attempts: 0,
@@ -419,6 +433,9 @@ function create() {
     // Create all audios
     audio = initAudio(this);
 
+    // Create animations
+    animations = initAnimations(this);
+
     // Create screen objects and children
     screens = {
         introScreen: new Screen(this, 0, 0, initIntroScreenChildren(this)),
@@ -432,11 +449,11 @@ function create() {
         addLeaderboardEntry: this.add.popup(0, 0, initAddLeaderboardDataPopup(this)),
     }
 
-    // loadStartScreen();
+    loadStartScreen();
 
-    Object.keys(screens).forEach(screen => screens[screen].setVisible(false));
-    Object.keys(popups).forEach(popup => popups[popup].setVisible(false));
-    gameOver(6969);
+    // Object.keys(screens).forEach(screen => screens[screen].setVisible(false));
+    // Object.keys(popups).forEach(popup => popups[popup].setVisible(false));
+    // gameOver(6969);
 
 }
 
@@ -545,7 +562,8 @@ function initMainGameChildren(scene) {
                 scene,
                 constants.moleCoordinates[rowNum*row.length + i][0],
                 constants.moleCoordinates[rowNum*row.length + i][1],
-                setMoleTexture()
+                setMoleTexture(),
+                scene.add.group()
                 );
         });
 
@@ -903,4 +921,13 @@ function initAudio(scene) {
     audio.effects["unsuccessfulWhack"] = scene.sound.add("unsuccessfulWhack", { loop: false, volume: 0.6 });
 
     return audio;
+}
+
+function initAnimations(scene) {
+    var objects = { snowBlast: { frames: [], }, };
+    for (var i=0; i<23; i++) {
+        objects.snowBlast.frames.push({ key: "snowBlast", frame: i.toString() });
+    }
+
+    return objects;
 }
