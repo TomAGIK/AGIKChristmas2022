@@ -35,7 +35,6 @@ class LeaderboardController extends Controller
             'email' => 'required|string',
             'score' => 'required|integer',
         ]);
-
         $leaderboard = Leaderboard::where('name', $request->name)
                 ->where('email', $request->email)
                 ->first();
@@ -43,12 +42,14 @@ class LeaderboardController extends Controller
         if (isset($leaderboard)) {
             if ($leaderboard->score <= $request->score) {
                 $leaderboard->score = $request->score;
+                $leaderboard->attempts++;
                 $leaderboard->save();
             }
         }
         else {
             $leaderboard = new Leaderboard;
             $leaderboard->fill($request->all());
+            $leaderboard->attempts = 1;
             $leaderboard->save();
         }
 
