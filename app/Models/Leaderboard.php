@@ -20,5 +20,6 @@ class Leaderboard extends Model
         'name',
         'email',
         'score',
+        'attempts',
     ];
 }
