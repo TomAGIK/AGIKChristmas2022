@@ -1,16 +1,11 @@
 // Import constants
 import { dimensions, screenSize } from "./constants/dimensions.js";
 import { textStyles } from "./constants/textStyles.js";
-import { colours } from "./constants/colours.js";
 
 // Import functions
-import { getLeft } from "./utilityFunctions/getLeft.js";
-import { getRight } from "./utilityFunctions/getRight.js";
-import { getTop } from "./utilityFunctions/getTop.js";
 import { getBottom } from "./utilityFunctions/getBottom.js";
 import { getRandomInt } from "./utilityFunctions/getRandomInt.js";
 import { getRandomNumber } from "./utilityFunctions/getRandomNumber.js";
-import { midpoint } from "./utilityFunctions/midpoint.js";
 
 // Import classes
 import { API } from "./classes/API.js";
@@ -195,6 +190,7 @@ class Mole extends Phaser.GameObjects.Image {
 
 }
 
+
 // Refresh page when resized to a certain threshold
 var previousWidth = globalThis.innerWidth;
 
@@ -206,6 +202,7 @@ window.addEventListener('resize', () => {
     }
     previousWidth = globalThis.innerWidth;
 });
+
 
 // Initialise constants
 const config = {
@@ -243,6 +240,7 @@ const config = {
         disableWebAudio: true
     },
 };
+const game = new Phaser.Game(config);
 
 // Set different constants for mobile and desktop
 const constants = (screenSize === 'lg') ? {
@@ -410,34 +408,37 @@ const constants = (screenSize === 'lg') ? {
 
 // Initialise global game variables
 var api = new API;
-var screens = {}; // Contains all the game screens
-var popups = {}; // Contains all the game popups
-var audio = {}; // Contains all the sounds used in the game
-var animations = {}; // Contains the animations in the game
-var player = { // Holds information about the current player
+var screens = {};
+var popups = {};
+var audio = {};
+var animations = {};
+var player = {
     name: "",
     attempts: 0,
     score: 0,
     email: "",
 };
-var countdown = { // Contains the time before play initiates, and the interval id is added later on
-    time: 3,
-}
-var timer; // Timer interval id is assigned to this
-var timeLimit = 30; // Time limit on the game
-var timeRemaining;
-var emitter; // Variable to hold the event emitter for the game
-var textures = { // The different textures for the moles, and the corresponding point worth of each
+var textures = {
     "reindeer": {points: 50, probability: 0.3},
     "elf": {points: 100, probability: 0.3},
     "agik": {points: 150, probability: 0.2},
     "gram": {points: 300, probability: 0.1},
     "santa": {points: -200, probability: 0.1},
 }
-var visibleMoles = []; // Array of all moles currently visible
+var timeLimit = 30;
 var curStage = 0;
+var timeRemaining;
+var emitter;
 
-const game = new Phaser.Game(config);
+// Contains the time before play initiates, and the interval id is added later on
+var countdown = {
+    time: 3,
+}
+// Timer interval id is assigned to this
+var timer;
+
+
+// Phaser functions START
 
 function preload() {
     // Assign useful dimensions to variables
@@ -445,32 +446,25 @@ function preload() {
     this.gameHeight = this.sys.game.canvas.height;
     this.center = { x: this.gameWidth/2, y: this.gameHeight/2 };
 
-    // Load images
-    this.load.atlas("snowBlast", "../animations/snow-blast-web-23frames.png", "../animations/snowBlast.json");
-    this.load.image("logo", "../images/Logo.png");
+    // Start screen
     this.load.image("startScreenBg", constants.startScreenBg);
-    this.load.image("instructionsBg", constants.instructionsBg);
-    this.load.image("popupBg", constants.popupBg);
-    this.load.image("gameOverBg", constants.gameOverBg);
     this.load.image("playIdle", "../images/buttons/play-idle.png");
     this.load.image("playHover", "../images/buttons/play-hovered.png");
     this.load.image("playDown", "../images/buttons/play-clicked.png");
-    this.load.image("mainBg", constants.mainBg);
-    this.load.image("playAgainIdle", "../images/buttons/play-again-idle.png");
-    this.load.image("playAgainHover", "../images/buttons/play-again-hovered.png");
-    this.load.image("playAgainDown", "../images/buttons/play-again-clicked.png");
     this.load.image("instructionsIdle", "../images/buttons/htp-idle.png");
     this.load.image("instructionsHover", "../images/buttons/htp-hovered.png");
     this.load.image("instructionsDown", "../images/buttons/htp-clicked.png");
+
+    // Instructions
+    this.load.image("instructionsBg", constants.instructionsBg);
+    this.load.image("popupBg", constants.popupBg);
     this.load.image("closeIdle", "../images/buttons/close-idle.png");
     this.load.image("closeHover", "../images/buttons/close-hovered.png");
     this.load.image("closeDown", "../images/buttons/close-clicked.png");
-    this.load.image("skipIdle", "../images/buttons/skip-idle.png");
-    this.load.image("skipHover", "../images/buttons/skip-hovered.png");
-    this.load.image("skipDown", "../images/buttons/skip-clicked.png");
-    this.load.image("submitIdle", "../images/buttons/submit-idle.png");
-    this.load.image("submitHover", "../images/buttons/submit-hovered.png");
-    this.load.image("submitDown", "../images/buttons/submit-clicked.png");
+
+    // Main game
+    this.load.image("mainBg", constants.mainBg);
+    for (let i = 0; i < constants.mainBgSections.length; i ++) { this.load.image(`bg${i+1}`, constants.mainBgSections[i]); }
     this.load.image("hammerIdle", "../images/hammer-idle.png");
     this.load.image("hammerDown", "../images/hammer-smack.png");
     this.load.image("elf", "../images/moles/mole-elf.png");
@@ -478,14 +472,24 @@ function preload() {
     this.load.image("gram", "../images/moles/mole-graham.png");
     this.load.image("santa", "../images/moles/mole-santa.png");
     this.load.image("reindeer", "../images/moles/mole-reindeer.png");
-    for (let i = 0; i < constants.mainBgSections.length; i ++) {
-        this.load.image(`bg${i+1}`, constants.mainBgSections[i]);
-    }
+    this.load.atlas("snowBlast", "../animations/snow-blast-web-23frames.png", "../animations/snowBlast.json");
+
+    // Add leaderboard data
     this.load.image("addLeaderboardEntryBg", constants.addLeaderboardEntryBg);
     this.load.image("addLeaderboardEntryPopupBg", constants.addLeaderboardEntryPopupBg);
-
-    // Load entry boxes
     this.load.html("addLeaderboardInputs", constants.addLeaderboardHTML);
+    this.load.image("skipIdle", "../images/buttons/skip-idle.png");
+    this.load.image("skipHover", "../images/buttons/skip-hovered.png");
+    this.load.image("skipDown", "../images/buttons/skip-clicked.png");
+    this.load.image("submitIdle", "../images/buttons/submit-idle.png");
+    this.load.image("submitHover", "../images/buttons/submit-hovered.png");
+    this.load.image("submitDown", "../images/buttons/submit-clicked.png");
+
+    // Game over
+    this.load.image("gameOverBg", constants.gameOverBg);
+    this.load.image("playAgainIdle", "../images/buttons/play-again-idle.png");
+    this.load.image("playAgainHover", "../images/buttons/play-again-hovered.png");
+    this.load.image("playAgainDown", "../images/buttons/play-again-clicked.png");
 
     // Load audio
     this.load.audio({
@@ -507,19 +511,19 @@ function create() {
     // Create event emitter
     emitter = new Phaser.Events.EventEmitter();
     emitter.on("updateTimeRemaining", updateTimeRemaining);
-    emitter.on("startCountdown", updateCountdown);
+    emitter.on("updateCountdown", updateCountdown);
 
     // Create all audios
     audio = initAudio(this);
 
     // Create animations
-    animations = initAnimations(this);
+    animations = initAnimations();
 
     // Create screen objects and children
     screens = {
-        introScreen: new Screen(this, 0, 0, initIntroScreenChildren(this)),
-        mainGame: new Screen(this, 0, 0, initMainGameChildren(this)),
-        gameOverScreen: new Screen(this, 0, 0, initGameOverScreenChildren(this)),
+        introScreen: new Screen(this, initIntroScreenChildren(this)),
+        mainGame: new Screen(this, initMainGameChildren(this)),
+        gameOverScreen: new Screen(this, initGameOverScreenChildren(this)),
     }
 
     // Create all popups
@@ -530,17 +534,17 @@ function create() {
 
     loadStartScreen();
 
-    // Object.keys(screens).forEach(screen => screens[screen].setVisible(false));
-    // Object.keys(popups).forEach(popup => popups[popup].setVisible(false));
-    // gameOver(6969);
-
 }
 
 function update() {
+    //
+    // If the pointer is within the gameZone, hide it
+    // If the user clicks within the gameZone, change the hammer texture (this must be done here to stop setInteractive blocking)
+    //
+
+    // Get current pointer and cursor style
     var pointer = this.input.activePointer;
     var canvasStyles = this.sys.canvas.style;
-
-
 
     if (screens.mainGame.visible) {
         if (Phaser.Geom.Polygon.Contains(screens["mainGame"]["gameZone"].input.hitArea, pointer.x, pointer.y)) {
@@ -559,6 +563,11 @@ function update() {
     }
 }
 
+// Phaser functions END
+
+
+// Init functions START
+
 function initIntroScreenChildren(scene) {
     var objects = {};
 
@@ -571,7 +580,10 @@ function initIntroScreenChildren(scene) {
     .on("pointerover", () => { objects["playBtn"].setTexture(constants.playBtnPointerOverTexture) })
     .on("pointerout", () => { objects["playBtn"].setTexture("playIdle") })
     .on("pointerdown", () => { objects["playBtn"].setTexture("playDown") })
-    .on("pointerup", () => { objects["playBtn"].setTexture("playHover"); initialiseGame(); });
+    .on("pointerup", () => {
+        objects["playBtn"].setTexture("playHover");
+        initialiseGame();
+    });
 
     // How to play button
     objects["instructionsBtn"] = scene.add.image(scene.center.x, getBottom(objects["playBtn"]) + constants.instructionsBtnMarginTop, "instructionsIdle").setOrigin(0.5);
@@ -579,7 +591,10 @@ function initIntroScreenChildren(scene) {
     .on("pointerover", () => { objects["instructionsBtn"].setTexture(constants.instructionsBtnPointerOverTexture) })
     .on("pointerout", () => { objects["instructionsBtn"].setTexture("instructionsIdle") })
     .on("pointerdown", () => { objects["instructionsBtn"].setTexture("instructionsDown") })
-    .on("pointerup", () => { objects["instructionsBtn"].setTexture("instructionsHover"); popups.instructions.show(); });
+    .on("pointerup", () => {
+        objects["instructionsBtn"].setTexture("instructionsHover");
+        popups.instructions.show();
+    });
 
     return objects;
 }
@@ -601,7 +616,10 @@ function initInstructionsPopup(scene) {
     .on("pointerover", () => { objects["closeBtn"].setTexture(constants.closeBtnPointerOverTexture) })
     .on("pointerout", () => { objects["closeBtn"].setTexture("closeIdle") })
     .on("pointerdown", () => { objects["closeBtn"].setTexture("closeDown") })
-    .on("pointerup", () => { objects["closeBtn"].setTexture("closeHover"); popups.instructions.hide(); });
+    .on("pointerup", () => {
+        objects["closeBtn"].setTexture("closeHover");
+        popups.instructions.hide();
+    });
 
     // Instructions text part 1
     objects["instructionsPt1"] = scene.add.text(scene.center.x, constants.instructionTextPt1OffsetY, constants.gameInstructionsPt1.toUpperCase(), constants.instructionBlueTextStyle).setOrigin(0.5, 0);
@@ -628,15 +646,16 @@ function initMainGameChildren(scene) {
     // Time remaining
     objects["timeRemaining"] = scene.add.text(constants.timerTextPaddingLeft, constants.timerTextPaddingTop, `0:30`, textStyles.timer).setOrigin(0, 0);
 
+    // Active game zone -> where the hammer can be moved around
     objects["gameZone"] = scene.add.polygon(0, 0, constants.gameHitZonePoints).setOrigin(0)
     .setInteractive({ hitArea: new Phaser.Geom.Polygon(constants.gameHitZonePoints), hitAreaCallback: Phaser.Geom.Polygon.Contains })
     .on("pointerdown", () => { audio.effects.unsuccessfulWhack.play() });
 
     // Create a mole at each hole
     constants.moleCoordinates.forEach((row, y) => {
-        // var rowNum = y;
+
         row.forEach((location, x) => {
-            // Add the mole at the correct placement, with a random texture
+            // Add the mole at the correct placement
             objects[`location${x}${y}`] = new Mole(
                 scene,
                 location[0],
@@ -669,11 +688,16 @@ function initAddLeaderboardDataPopup(scene) {
     // Input fields
     objects["inputFields"] = scene.add.dom(constants.inputsMarginLeft, constants.inputsMarginTop).createFromCache("addLeaderboardInputs").setOrigin(0.5, 0.5);
 
+    // Unfocus text boxes when canvas is clicked
+    objects["bg"].on("pointerdown", () => {
+        objects["inputFields"].getChildByName("name").blur();
+        objects["inputFields"].getChildByName("email").blur();
+    });
+
+    // Rectangle to ensure input fields can actually be clicked, and not unfocussed as soon as clicked
     objects["blockInputBgClick"] = scene.add.rectangle(objects["inputFields"].x, objects["inputFields"].y, objects["inputFields"].displayWidth*2.07, objects["inputFields"].displayHeight*2.07, 0xffffff, 0)
     .setOrigin(objects["inputFields"].originX, objects["inputFields"].originY)
     .setInteractive();
-
-    objects["bg"].on("pointerdown", () => { objects["inputFields"].getChildByName("name").blur(); objects["inputFields"].getChildByName("email").blur(); });
 
     // Submit button
     objects["submitBtn"] = scene.add.image(constants.submitBtnMarginLeft, constants.submitSkipBtnsMarginTop, "submitIdle").setScale(constants.submitBtnScale);
@@ -682,6 +706,10 @@ function initAddLeaderboardDataPopup(scene) {
     .on("pointerout", () => { objects["submitBtn"].setTexture("submitIdle") })
     .on("pointerdown", () => { objects["submitBtn"].setTexture("submitDown") })
     .on("pointerup", () => {
+        //
+        // Checks the validity of the inputs and updates the leaderboard if they're valid
+        //
+
         objects["submitBtn"].setTexture("submitHover");
 
         var nameInput = objects["inputFields"].getChildByName("name");
@@ -703,9 +731,9 @@ function initAddLeaderboardDataPopup(scene) {
                 name: player.name,
 	            email: player.email,
 	            score: player.score,
-	        });
-
-            refreshLeaderboard();
+	        }).then(res => {
+                refreshLeaderboard();
+            });
 
             popups.addLeaderboardEntry.hide();
 
@@ -726,13 +754,18 @@ function initAddLeaderboardDataPopup(scene) {
     .on("pointerover", () => { objects["skipBtn"].setTexture(constants.skipBtnPointerOverTexture) })
     .on("pointerout", () => { objects["skipBtn"].setTexture("skipIdle") })
     .on("pointerdown", () => { objects["skipBtn"].setTexture("skipDown") })
-    .on("pointerup", () => { objects["skipBtn"].setTexture("skipHover"); refreshLeaderboard(); popups.addLeaderboardEntry.hide(); });
+    .on("pointerup", () => {
+        objects["skipBtn"].setTexture("skipHover");
+        refreshLeaderboard();
+        popups.addLeaderboardEntry.hide();
+    });
 
     return objects;
 }
 
 function initGameOverScreenChildren(scene) {
     var objects = {};
+
     // Background image
     objects["bg"] = scene.add.image(scene.center.x, scene.center.y, "gameOverBg").setOrigin(0.5);
 
@@ -740,6 +773,7 @@ function initGameOverScreenChildren(scene) {
     objects[`leaderboardHeaderName`] = scene.add.text(constants.leaderboardHeader_name.x, constants.leaderboardHeader_name.y, `NAME`, textStyles.leaderboard).setOrigin(0, 0.5);
     objects[`leaderboardHeaderPoints`] = scene.add.text(constants.leaderboardHeader_pts.x, constants.leaderboardHeader_pts.y, `PTS`, textStyles.leaderboard).setOrigin(0, 0.5);
 
+    // Create the leaderboard entries with empty strings for the name and pts (they will be accessed in fn refreshLeaderboard to display the proper values)
     for (let i = 0; i < constants.leaderboardListItems; i++) {
         objects[`leaderboardRank${i+1}`] = scene.add.text(constants.leaderboardRanks.x, (constants.leaderboardRanks.displacement*i)+constants.leaderboardRanks.y, `${i+1}.`, textStyles.leaderboard).setOrigin(0, 0.5);
         objects[`leaderboardName${i+1}`] = scene.add.text(constants.leaderboardName.x, (constants.leaderboardName.displacement*i)+constants.leaderboardName.y, ``, textStyles.leaderboard).setOrigin(0, 0.5);
@@ -755,10 +789,48 @@ function initGameOverScreenChildren(scene) {
     .on("pointerover", () => { objects["playAgainBtn"].setTexture(constants.playAgainBtnPointerOverTexture) })
     .on("pointerout", () => { objects["playAgainBtn"].setTexture("playAgainIdle") })
     .on("pointerdown", () => { objects["playAgainBtn"].setTexture("playAgainDown") })
-    .on("pointerup", () => { objects["playAgainBtn"].setTexture("playAgainHover"); initialiseGame(); });
+    .on("pointerup", () => {
+        objects["playAgainBtn"].setTexture("playAgainHover");
+        initialiseGame();
+    });
 
     return objects;
 }
+
+function initAudio(scene) {
+    var audio = { music: {}, effects: {} }
+
+    // Don't stop the music on un-focus
+    scene.sound.pauseOnBlur = false;
+
+    audio.music["gameMusic"] = scene.sound.add("gameMusic", { loop: false, volume: 0 });
+    audio.music.gameMusic.fadeIn = scene.tweens.add({
+        targets: audio.music.gameMusic,
+        volume: 0.4,
+        duration: 2000,
+    });
+
+    audio.effects["successfulWhack"] = scene.sound.add("successfulWhack", { loop: false });
+
+    audio.effects["unsuccessfulWhack"] = scene.sound.add("unsuccessfulWhack", { loop: false, volume: 0.6 });
+
+    return audio;
+}
+
+function initAnimations() {
+    var anims = { snowBlast: { frames: [], }, };
+
+    for (var i=0; i<23; i++) {
+        anims.snowBlast.frames.push({ key: "snowBlast", frame: i.toString() });
+    }
+
+    return anims;
+}
+
+// Init functions END
+
+
+// Gameplay functions START
 
 function loadStartScreen() {
     // Hide everything except the start screen
@@ -778,8 +850,6 @@ function initialiseGame() {
     screens["mainGame"]["score"].setText(`${player.score}`);
     screens["mainGame"]["timeRemaining"].setText(`0:30`);
 
-    // Object.keys(screens["mainGame"]).filter(key => key.includes("location")).forEach(mole => screens["mainGame"][mole].hide("timedOut")); // Hide all visible moles
-
     // Hide start and end screen and show the main game
     screens["introScreen"].setVisible(false);
     screens["gameOverScreen"].setVisible(false);
@@ -788,9 +858,27 @@ function initialiseGame() {
     // Starts the countdown for play begin
     countdown.time = 3;
     countdown.timer = setInterval(() => {
-        emitter.emit("startCountdown");
+        emitter.emit("updateCountdown");
     }, 1000);
 
+}
+
+function updateCountdown() {
+    //
+    // Decrements the time, updates the display, and starts the game when reaches 0
+    //
+
+    countdown.time --;
+    if (countdown.time > 0) {
+        screens["mainGame"].countdown.setText(`${countdown.time}`);
+    } else {
+        screens["mainGame"].countdown.setText(`GO!`);
+        clearInterval(countdown.timer);
+        setTimeout(() => {
+            screens["mainGame"].countdown.setVisible(false);
+            startGameplay();
+        }, 1000);
+    }
 }
 
 function startGameplay() {
@@ -806,6 +894,41 @@ function startGameplay() {
     // Show one mole at a time
     stage1();
 
+}
+
+function showMole() {
+    //
+    // Shows a random mole that is not already visible
+    //
+
+    do { // Get random coordinates
+        var x = getRandomInt(0, constants.moleCoordinates[0].length-1);
+        var y = getRandomInt(0, constants.moleCoordinates.length-1);
+    } while (screens["mainGame"][`location${x}${y}`].visible); // check if mole at this location is visible already
+
+    screens["mainGame"][`location${x}${y}`].show();
+}
+
+function updateTimeRemaining() {
+    //
+    // Decrements the time, updates the display, and ends the game if time has run out
+    //
+
+    timeRemaining --;
+    if (timeRemaining > 9) {
+        screens["mainGame"].timeRemaining.setText(`0:${timeRemaining}`);
+    } else if (timeRemaining > 0) {
+        screens["mainGame"].timeRemaining.setText(`0:0${timeRemaining}`);
+    } else {
+        screens["mainGame"].timeRemaining.setText(`0:00`);
+        gameOver(player.score);
+    }
+}
+
+function updateScore(increment) {
+    // Updates the player's score, and the display
+    player.score += increment;
+    screens["mainGame"].score.setText(`${player.score}`);
 }
 
 function stage1() {
@@ -848,126 +971,38 @@ function stage4() {
 
 }
 
-function gameOver(finalScore) {
-    // Hide game screen and show game over
-    clearTimeout(timer);
-
-    Object.keys(screens["mainGame"]).filter(key => key.includes("location")).forEach(mole => screens["mainGame"][mole].hide("reset")); // Hide all visible moles
-
-    // Show the data input popup
-    popups["addLeaderboardEntry"].show();
-
-    screens["mainGame"].setVisible(false);
-    screens["gameOverScreen"].setVisible(true);
-    screens["gameOverScreen"]["scoreText"].setText(finalScore);
-}
-
-function updateTimeRemaining() {
-    // Decrements the time, updates the display, and ends the game if time has run out
-    timeRemaining --;
-    if (timeRemaining > 9) {
-        screens["mainGame"].timeRemaining.setText(`0:${timeRemaining}`);
-    } else if (timeRemaining > 0) {
-        screens["mainGame"].timeRemaining.setText(`0:0${timeRemaining}`);
-    } else {
-        screens["mainGame"].timeRemaining.setText(`0:00`); // Update display
-        // visibleMoles.forEach(mole => mole.hide("reset")); // Hide all visible moles
-        // visibleMoles = []; // reset array
-        // clearInterval(timer); // Stop countdown timer
-        // clearTimeout(curStageTimeout); // Stop game execution
-        gameOver(player.score); // Show game end screen
-    }
-}
-
-function updateCountdown() {
-    // Counts down from 3
-    // Starts the gameplay when it finishes
-
-    countdown.time --;
-    if (countdown.time > 0) {
-        screens["mainGame"].countdown.setText(`${countdown.time}`);
-    } else {
-        screens["mainGame"].countdown.setText(`GO!`);
-        clearInterval(countdown.timer);
-        setTimeout(() => {
-            screens["mainGame"].countdown.setVisible(false);
-            startGameplay();
-        }, 1000);
-    }
-}
-
-function updateScore(increment) {
-    // Updates the player's score, and the display
-    player.score += increment;
-    screens["mainGame"].score.setText(`${player.score}`);
-}
-
-function showMole() {
-
-    // Shows a mole that is not already visible
-
-    do { // Get random coordinates
-        var x = getRandomInt(0, constants.moleCoordinates[0].length-1);
-        var y = getRandomInt(0, constants.moleCoordinates.length-1);
-        // var x = 0;
-        // var y = 0;
-    } while (screens["mainGame"][`location${x}${y}`].visible); // check if mole at this location is visible already
-
-    // // Update mole texture -> MOVE TO MOLE CLASS
-    // screens["mainGame"][`location${x}${y}`].setTexture(randomiseTexture());
-
-    // Set mole to visible
-    // visibleMoles.push([x, y]); // SHOULD BE IN MOLE CLASS
-    screens["mainGame"][`location${x}${y}`].show();
-
-}
-
 function refreshLeaderboard() {
-    // API CALL - Get leaderboard data
+    // API CALL - Get leaderboard data and update display
     api.leaderboard_index().then(res => {
         let ranks = res.data;
         // Loop through the required number of entries
         for (let i = 0; i < constants.leaderboardListItems; i++) {
-            // If name is too long - cut into ellipsis
             if (ranks[i]) {
+                // If name is too long - cut into ellipsis
                 if (ranks[i].name.length > 10) {
                     screens["gameOverScreen"][`leaderboardName${i+1}`].setText(ranks[i].name.toUpperCase().substr(0, 10)+"...");
                 }
                 else {
                     screens["gameOverScreen"][`leaderboardName${i+1}`].setText(ranks[i].name.toUpperCase());
                 }
-                // Text - Rank & Score
                 screens["gameOverScreen"][`leaderboardPts${i+1}`].setText(ranks[i].score);
             }
         }
     });
 }
 
-function initAudio(scene) {
-    var audio = { music: {}, effects: {} }
+function gameOver(finalScore) {
+    // Kill game execution and hide all visible moles
+    clearTimeout(timer);
+    Object.keys(screens["mainGame"]).filter(key => key.includes("location")).forEach(mole => screens["mainGame"][mole].hide("reset"));
 
-    // Don't stop the music on un-focus
-    scene.sound.pauseOnBlur = false;
+    // Show the data input popup
+    popups["addLeaderboardEntry"].show();
 
-    audio.music["gameMusic"] = scene.sound.add("gameMusic", { loop: false, volume: 0 });
-    audio.music.gameMusic.fadeIn = scene.tweens.add({
-        targets: audio.music.gameMusic,
-        volume: 0.4,
-        duration: 2000,
-    });
-
-    audio.effects["successfulWhack"] = scene.sound.add("successfulWhack", { loop: false });
-
-    audio.effects["unsuccessfulWhack"] = scene.sound.add("unsuccessfulWhack", { loop: false, volume: 0.6 });
-
-    return audio;
+    // Hide game screen and show game over
+    screens["mainGame"].setVisible(false);
+    screens["gameOverScreen"].setVisible(true);
+    screens["gameOverScreen"]["scoreText"].setText(finalScore);
 }
 
-function initAnimations(scene) {
-    var objects = { snowBlast: { frames: [], }, };
-    for (var i=0; i<23; i++) {
-        objects.snowBlast.frames.push({ key: "snowBlast", frame: i.toString() });
-    }
-
-    return objects;
-}
+// Gameplay functions END

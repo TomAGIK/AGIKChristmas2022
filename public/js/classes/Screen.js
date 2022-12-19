@@ -2,9 +2,12 @@
 // certain 'screen' of the interactive
 // -> essentially a collection of objects that should all be shown together
 
+// Reason this is not just a regular phaser container is so the container
+// children can be referenced and are set as properties outside of the main code
+
 export class Screen extends Phaser.GameObjects.Container {
 
-    constructor(scene, x, y, children) {
+    constructor(scene, children, x=0, y=0) {
 
         super(scene, x, y, []);
         scene.add.existing(this);
