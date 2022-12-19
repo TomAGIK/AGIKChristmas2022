@@ -112,7 +112,7 @@ class Mole extends Phaser.GameObjects.Image {
                 break;
             case "whacked":
                 // Play whacked sounds and animation
-                audio.effects.successfulWhack.play();
+                (this.texture.key === "santa") ? audio.effects.santaWhack.play() : audio.effects.successfulWhack.play();
                 this.whackedAnim.play("whacked");
 
                 // Reset mole position and animations
@@ -245,9 +245,11 @@ const game = new Phaser.Game(config);
 // Set different constants for mobile and desktop
 const constants = (screenSize === 'lg') ? {
     // Links
+    musicSplashBg: "../images/empty-form-web.png",
     startScreenBg: "../images/desktopStartScreenBackground.png",
-    instructionsBg: "../images/desktopHTPBackground.png",
+    instructionsBg: "../images/background-how-to-play v3.png",
     popupBg: "../images/desktopHTPTextBg.png",
+    leaderboardBg: "../images/empty-form-web.png",
     mainBg: "../images/mainBg/1 top.png",
     mainBgSections: ["../images/mainBg/2 top-mid.png", "../images/mainBg/3 mid.png", "../images/mainBg/4 bot.png"],
     addLeaderboardEntryBg: "../images/desktopAddLeaderboardBg.png",
@@ -255,15 +257,31 @@ const constants = (screenSize === 'lg') ? {
     addLeaderboardHTML: "../html/inputs/desktopAddLeaderboardEntry.html",
     gameOverBg: "../images/desktopGameOverBackground.png",
 
-    // Start screen
+    // All screens
+    muteBtnPointerOverTexture: "Hover",
+    muteBtnMarginTop: 60,
+    muteBtnMarginLeft: 60,
+
+    // Start splash
+    musicSplashInstructions: `\nthis game has sound\n\nif you wish to mute the\nsound, click the mute\nbutton in the top left\nhand corner`,
+    musicSplashBgScale: 0.25,
+    musicSplashInstructionsOffsetY: -95,
+    continueBtnPointerOverTexture: "continueHover",
+    continueBtnMarginTop: 700,
+    continueBtnScale: 0.3,
+
+    // Main menu
     playBtnPointerOverTexture: "playHover",
-    playBtnOffsetY: 175,
+    playBtnOffsetY: 130,
     instructionsBtnPointerOverTexture: "instructionsHover",
-    instructionsBtnMarginTop: 140,
+    instructionsBtnMarginTop: 80,
+    leaderboardBtnPointerOverTexture: "leaderboardHover",
+    leaderboardBtnMarginTop: 80,
+    leaderboardBtnScale: 0.8,
 
     // Game instructions
-    gameInstructionsPt1: `Different things will pop up out of holes, and you must bash them to gain points.\n\nYou will have 30 seconds to gain as many points as you can.`,
-    gameInstructionsPt2: `Be careful though! if you smack\nsanta you will lose`,
+    gameInstructionsPt1: `Different characters will pop up and you must\nbash them to score points.\n\nYou will only have 30 seconds to score as many points as you can.`,
+    gameInstructionsPt2: `Be careful though! if you bash\nsanta you will lose`,
     gameInstructionsPt3: `200pts`,
     instructionBlueTextStyle: textStyles.instructionsBlue,
     instruction2BlueTextStyle: textStyles.instructionsBlue2,
@@ -275,7 +293,21 @@ const constants = (screenSize === 'lg') ? {
     instructionTextPt2OffsetY: 825,
     instructionTextPt2OffsetX: 30,
     instructionTextPt3OffsetY: 870,
-    instructionTextPt3OffsetX: 212,
+    instructionTextPt3OffsetX: 228,
+
+    // Leaderboard popup
+    leaderboardBgScale: 0.4,
+    leaderboardPopupItems: 10,
+    leaderboardPopupNameHeader: { x: 525, y: 190 },
+    leaderboardPopupPtsHeader: { x: 1150, y: 190 },
+    leaderboardPopupRanks: { x: 375, y: 276, displacement: 69, },
+    leaderboardPopupName: { x: 525, y: 276, displacement: 69, },
+    leaderboardPopupPoints: { x: 1150, y: 276, displacement: 69, },
+    leaderboardPopupNameCutoff: 10,
+    refreshBtnScale: 0.4,
+    popupRefreshBtnMarginLeft: 1540,
+    popupRefreshBtnMarginTop: 190,
+    popupRefreshBtnPointerOverTexture: "refreshHover",
 
     // Main game
     stage1End: 25,
@@ -315,6 +347,9 @@ const constants = (screenSize === 'lg') ? {
     playAgainBtnPointerOverTexture: "playAgainHover",
     playAgainBtnMarginTop: 170,
     finalScoreLocation: { x: 455, y: 600 },
+    refreshBtnMarginLeft: 1755,
+    refreshBtnMarginTop: 185,
+    refreshBtnPointerOverTexture: "refreshHover",
 
     // Leaderboard
     leaderboardListItems: 10,
@@ -325,9 +360,11 @@ const constants = (screenSize === 'lg') ? {
     leaderboardPoints: { x: 1580, y: 366, displacement: 55, },
 } : {
     // Links
+    musicSplashBg: "../images/empty-form-web.png",
     startScreenBg: "../images/mobileStartScreenBackground.png",
-    instructionsBg: "../images/mobileHTPBackground.jpg",
+    instructionsBg: "../images/background-how-to-play-mobile v3.png",
     popupBg: "../images/mobileHTPTextBg.png",
+    leaderboardBg: "../images/empty-form-mobile.png",
     mainBg: "../images/mainBg/1m top.png",
     mainBgSections: ["../images/mainBg/2m top mid.png", "../images/mainBg/3m mid.png", "../images/mainBg/4m bot mid.png", "../images/mainBg/5m bot.png"],
     addLeaderboardEntryBg: "../images/mobileAddLeaderboardBg.jpg",
@@ -335,15 +372,31 @@ const constants = (screenSize === 'lg') ? {
     addLeaderboardHTML: "../html/inputs/mobileAddLeaderboardEntry.html",
     gameOverBg: "../images/mobileGameOverBackground.png",
 
-    // Start screen
+    // All screens
+    muteBtnPointerOverTexture: "Down",
+    muteBtnMarginTop: 60,
+    muteBtnMarginLeft: 60,
+
+    // Start splash
+    musicSplashInstructions: `\nthis game has sound\n\nif you wish to mute the\nsound, click the mute\nbutton in the top left\nhand corner`,
+    musicSplashBgScale: 0.24,
+    musicSplashInstructionsOffsetY: -90,
+    continueBtnPointerOverTexture: "continueDown",
+    continueBtnMarginTop: 875,
+    continueBtnScale: 0.3,
+
+    // Main menu
     playBtnPointerOverTexture: "playDown",
     playBtnOffsetY: 50,
     instructionsBtnPointerOverTexture: "instructionsDown",
-    instructionsBtnMarginTop: 140,
+    instructionsBtnMarginTop: 110,
+    leaderboardBtnPointerOverTexture: "leaderboardDown",
+    leaderboardBtnMarginTop: 110,
+    leaderboardBtnScale: 0.8,
 
     // Game instructions
-    gameInstructionsPt1: `Different things will\npop up out of holes,\nand you must bash\nthem to gain points.\n\nYou will have 30\nseconds to gain as\nmany points as\nyou can.`,
-    gameInstructionsPt2: `Be careful though!\nif you smack santa\n\nyou will lose`,
+    gameInstructionsPt1: `Different characters\nwill pop up and you\nmust bash them\nto score points.\n\nYou will only have 30\nseconds to score as\nmany points as\nyou can.`,
+    gameInstructionsPt2: `Be careful though!\nif you bash santa\n\nyou will lose`,
     gameInstructionsPt3: `200pts`,
     instructionBlueTextStyle: textStyles.instructionsBlueMobile,
     instruction2BlueTextStyle: textStyles.instructionsBlue2Mobile,
@@ -356,6 +409,20 @@ const constants = (screenSize === 'lg') ? {
     instructionTextPt2OffsetX: 50,
     instructionTextPt3OffsetY: 1186,
     instructionTextPt3OffsetX: 190,
+
+    // Leaderboard popup
+    leaderboardBgScale: 0.4,
+    leaderboardPopupItems: 15,
+    leaderboardPopupNameHeader: { x: 225, y: 175 },
+    leaderboardPopupPtsHeader: { x: 570, y: 175 },
+    leaderboardPopupRanks: { x: 130, y: 260, displacement: 70, },
+    leaderboardPopupName: { x: 235, y: 260, displacement: 70, },
+    leaderboardPopupPoints: { x: 580, y: 260, displacement: 70, },
+    leaderboardPopupNameCutoff: 6,
+    refreshBtnScale: 0.4,
+    popupRefreshBtnMarginLeft: 700,
+    popupRefreshBtnMarginTop: 75,
+    popupRefreshBtnPointerOverTexture: "refreshDown",
 
     // Main game
     stage1End: 25,
@@ -396,6 +463,9 @@ const constants = (screenSize === 'lg') ? {
     playAgainBtnPointerOverTexture: "playAgainDown",
     playAgainBtnMarginTop: 115,
     finalScoreLocation: { x: 450, y: 500 },
+    refreshBtnMarginLeft: 770,
+    refreshBtnMarginTop: 925,
+    refreshBtnPointerOverTexture: "refreshDown",
 
     // Leaderboard
     leaderboardListItems: 5,
@@ -425,6 +495,8 @@ var textures = {
     "gram": {points: 300, probability: 0.1},
     "santa": {points: -200, probability: 0.1},
 }
+var muteBtn;
+var muted;
 var timeLimit = 30;
 var curStage = 0;
 var timeRemaining;
@@ -446,6 +518,20 @@ function preload() {
     this.gameHeight = this.sys.game.canvas.height;
     this.center = { x: this.gameWidth/2, y: this.gameHeight/2 };
 
+    // All screens
+    this.load.image("muteIdle", "../images/buttons/mute-idle.png");
+    this.load.image("muteHover", "../images/buttons/mute-hovered.png");
+    this.load.image("muteDown", "../images/buttons/mute-clicked.png");
+    this.load.image("unmuteIdle", "../images/buttons/unmute-idle.png");
+    this.load.image("unmuteHover", "../images/buttons/unmute-hovered.png");
+    this.load.image("unmuteDown", "../images/buttons/unmute-clicked.png");
+
+    // Music splash screen
+    this.load.image("musicSplashBg", constants.musicSplashBg);
+    this.load.image("continueIdle", "../images/buttons/continue-idle.png");
+    this.load.image("continueHover", "../images/buttons/continue-hovered.png");
+    this.load.image("continueDown", "../images/buttons/continue-clicked.png");
+
     // Start screen
     this.load.image("startScreenBg", constants.startScreenBg);
     this.load.image("playIdle", "../images/buttons/play-idle.png");
@@ -454,6 +540,9 @@ function preload() {
     this.load.image("instructionsIdle", "../images/buttons/htp-idle.png");
     this.load.image("instructionsHover", "../images/buttons/htp-hovered.png");
     this.load.image("instructionsDown", "../images/buttons/htp-clicked.png");
+    this.load.image("leaderboardIdle", "../images/buttons/leaderboard-idle.png");
+    this.load.image("leaderboardHover", "../images/buttons/leaderboard-hovered.png");
+    this.load.image("leaderboardDown", "../images/buttons/leaderboard-clicked.png");
 
     // Instructions
     this.load.image("instructionsBg", constants.instructionsBg);
@@ -461,6 +550,12 @@ function preload() {
     this.load.image("closeIdle", "../images/buttons/close-idle.png");
     this.load.image("closeHover", "../images/buttons/close-hovered.png");
     this.load.image("closeDown", "../images/buttons/close-clicked.png");
+
+    // Leaderboard Popup
+    this.load.image("leaderboardBg", constants.leaderboardBg);
+    this.load.image("refreshIdle", "../images/buttons/refresh-idle.png");
+    this.load.image("refreshHover", "../images/buttons/refresh-hovered.png");
+    this.load.image("refreshDown", "../images/buttons/refresh-clicked.png");
 
     // Main game
     this.load.image("mainBg", constants.mainBg);
@@ -504,6 +599,14 @@ function preload() {
         key: "unsuccessfulWhack",
         url: [ "../audio/Single Hammer Hit on Wood 01.mp3" ]
     });
+    this.load.audio({
+        key: "santaWhack",
+        url: ["../audio/santahit.mp3"]
+    });
+    this.load.audio({
+        key: "menuMusic",
+        url: ["../audio/Menu Music.mp3", "../audio/Menu Music.ogg"]
+    });
 
 }
 
@@ -519,6 +622,9 @@ function create() {
     // Create animations
     animations = initAnimations();
 
+    // Global button
+    if (screenSize === "lg") { initMuteButton(this); };
+
     // Create screen objects and children
     screens = {
         introScreen: new Screen(this, initIntroScreenChildren(this)),
@@ -528,11 +634,13 @@ function create() {
 
     // Create all popups
     popups = {
+        musicSplash: this.add.popup(0, 0, initMusicSplashPopup(this)),
         instructions: this.add.popup(0, 0, initInstructionsPopup(this)),
+        leaderboard: this.add.popup(0, 0, initLeaderboardPopup(this)),
         addLeaderboardEntry: this.add.popup(0, 0, initAddLeaderboardDataPopup(this)),
     }
 
-    loadStartScreen();
+    if (screenSize === "lg") { loadStartScreen(); } else { showMainMenu(); }
 
 }
 
@@ -568,6 +676,56 @@ function update() {
 
 // Init functions START
 
+function initMuteButton(scene) {
+
+    muteBtn = scene.add.image(constants.muteBtnMarginLeft, constants.muteBtnMarginTop, "muteIdle").setDepth(2);
+    muted = false;
+    muteBtn.setInteractive({ useHandCursor: true })
+    .on("pointerover", () => { (muted) ? muteBtn.setTexture("unmute"+constants.muteBtnPointerOverTexture): muteBtn.setTexture("mute"+constants.muteBtnPointerOverTexture) })
+    .on("pointerout", () => { (muted) ? muteBtn.setTexture("unmuteIdle") : muteBtn.setTexture("muteIdle") })
+    .on("pointerdown", () => { (muted) ? muteBtn.setTexture("unmuteDown") : muteBtn.setTexture("muteDown") })
+    .on("pointerup", () => {
+        muted = !muted;
+        if (muted) {
+            muteBtn.setTexture("unmuteHover");
+            scene.sound.mute = true;
+        } else {
+            muteBtn.setTexture("muteHover");
+            scene.sound.mute = false;
+        }
+    });
+}
+
+function initMusicSplashPopup(scene) {
+    var objects = {};
+
+    // Dim background
+    objects["bg"] = scene.add.image(scene.center.x, scene.center.y, "instructionsBg").setOrigin(0.5);
+    objects["bg"].setInteractive();
+
+    // Popup background
+    objects["popupBg"] = scene.add.image(scene.center.x, scene.center.y, "musicSplashBg").setOrigin(0.5).setScale(constants.musicSplashBgScale);
+    objects["popupBg"].setInteractive();
+
+    // Text
+    objects["infoText"] = scene.add.text(scene.center.x, scene.center.y + constants.musicSplashInstructionsOffsetY, constants.musicSplashInstructions.toUpperCase(), constants.instructionBlueTextStyle).setOrigin(0.5);
+
+    // Continue button
+    objects["continueBtn"] = scene.add.image(scene.center.x, constants.continueBtnMarginTop, "continueIdle").setOrigin(0.5).setScale(constants.continueBtnScale);
+    objects["continueBtn"].setInteractive({ useHandCursor: true })
+    .on("pointerover", () => { objects["continueBtn"].setTexture(constants.continueBtnPointerOverTexture) })
+    .on("pointerout", () => { objects["continueBtn"].setTexture("continueIdle") })
+    .on("pointerdown", () => { objects["continueBtn"].setTexture("continueDown") })
+    .on("pointerup", () => {
+        objects["continueBtn"].setTexture("continueHover");
+        showMainMenu();
+        audio.music.menuMusic.play();
+	    audio.music.menuMusic.fadeIn.play();
+    });
+
+    return objects;
+}
+
 function initIntroScreenChildren(scene) {
     var objects = {};
 
@@ -594,6 +752,19 @@ function initIntroScreenChildren(scene) {
     .on("pointerup", () => {
         objects["instructionsBtn"].setTexture("instructionsHover");
         popups.instructions.show();
+    });
+
+    // Leaderboard button
+    objects["leaderboardBtn"] = scene.add.image(scene.center.x, getBottom(objects["instructionsBtn"]) + constants.leaderboardBtnMarginTop, "leaderboardIdle").setOrigin(0.5)
+    .setScale(constants.leaderboardBtnScale);
+    objects["leaderboardBtn"].setInteractive({ useHandCursor: true })
+    .on("pointerover", () => { objects["leaderboardBtn"].setTexture(constants.leaderboardBtnPointerOverTexture) })
+    .on("pointerout", () => { objects["leaderboardBtn"].setTexture("leaderboardIdle") })
+    .on("pointerdown", () => { objects["leaderboardBtn"].setTexture("leaderboardDown") })
+    .on("pointerup", () => {
+        objects["leaderboardBtn"].setTexture("leaderboardHover");
+        refreshLeaderboard(true);
+        popups.leaderboard.show();
     });
 
     return objects;
@@ -630,6 +801,59 @@ function initInstructionsPopup(scene) {
     // Instructions text part 3
     objects["instructionsPt3"] = scene.add.text(scene.center.x + constants.instructionTextPt3OffsetX, constants.instructionTextPt3OffsetY, constants.gameInstructionsPt3.toUpperCase(), constants.instructionRedTextStyle).setOrigin(0.5, 0);
 
+
+    return objects;
+}
+
+function initLeaderboardPopup(scene) {
+    var objects = {};
+
+    // Dim background
+    objects["bg"] = scene.add.image(scene.center.x, scene.center.y, "instructionsBg").setOrigin(0.5);
+    objects["bg"].setInteractive().on("pointerup", () => popups.leaderboard.hide());
+
+    // Popup background
+    objects["popupBg"] = scene.add.image(scene.center.x, scene.center.y, "leaderboardBg").setOrigin(0.5).setScale(constants.leaderboardBgScale);
+    objects["popupBg"].setInteractive();
+
+    // Close button
+    objects["closeBtn"] = scene.add.image(scene.gameWidth - constants.closeBtnMarginRight, constants.closeBtnMarginTop, "closeIdle").setOrigin(0.5);
+    objects["closeBtn"].setInteractive({ useHandCursor: true })
+    .on("pointerover", () => { objects["closeBtn"].setTexture(constants.closeBtnPointerOverTexture) })
+    .on("pointerout", () => { objects["closeBtn"].setTexture("closeIdle") })
+    .on("pointerdown", () => { objects["closeBtn"].setTexture("closeDown") })
+    .on("pointerup", () => {
+        objects["closeBtn"].setTexture("closeHover");
+        popups.leaderboard.hide();
+    });
+
+    // Leaderboard headers
+    objects[`leaderboardHeaderName`] = scene.add.text(constants.leaderboardPopupNameHeader.x, constants.leaderboardPopupNameHeader.y, `NAME`, textStyles.leaderboardPopup).setOrigin(0, 0.5);
+    objects[`leaderboardHeaderPoints`] = scene.add.text(constants.leaderboardPopupPtsHeader.x, constants.leaderboardPopupPtsHeader.y, `PTS`, textStyles.leaderboardPopup).setOrigin(0, 0.5);
+
+    // Create the leaderboard entries with empty strings for the name and pts (they will be accessed in fn refreshLeaderboard to display the proper values)
+    for (let i = 0; i < constants.leaderboardPopupItems; i++) {
+        objects[`leaderboardRank${i+1}`] = scene.add.text(constants.leaderboardPopupRanks.x, (constants.leaderboardPopupRanks.displacement*i)+constants.leaderboardPopupRanks.y, `${i+1}.`, textStyles.leaderboardPopup).setOrigin(0, 0.5);
+        objects[`leaderboardName${i+1}`] = scene.add.text(constants.leaderboardPopupName.x, (constants.leaderboardPopupName.displacement*i)+constants.leaderboardPopupName.y, ``, textStyles.leaderboardPopup).setOrigin(0, 0.5);
+        objects[`leaderboardPts${i+1}`] = scene.add.text(constants.leaderboardPopupPoints.x, (constants.leaderboardPopupPoints.displacement*i)+constants.leaderboardPopupPoints.y, ``, textStyles.leaderboardPopup).setOrigin(0, 0.5);
+    }
+
+    // Refresh button
+    objects["refreshBtn"] = scene.add.image(constants.popupRefreshBtnMarginLeft, constants.popupRefreshBtnMarginTop, "refreshIdle").setOrigin(0.5).setScale(constants.refreshBtnScale);
+    objects["refreshBtn"].setInteractive({ useHandCursor: true })
+    .on("pointerover", () => { objects["refreshBtn"].setTexture(constants.popupRefreshBtnPointerOverTexture) })
+    .on("pointerout", () => { objects["refreshBtn"].setTexture("refreshIdle") })
+    .on("pointerdown", () => { objects["refreshBtn"].setTexture("refreshDown") })
+    .on("pointerup", () => {
+        objects["refreshBtn"].setTexture("refreshHover");
+        for (let i = 0; i < constants.leaderboardPopupItems; i++) {
+            objects[`leaderboardName${i+1}`].setText("");
+            objects[`leaderboardPts${i+1}`].setText("");
+        }
+        setTimeout(() => {
+	        refreshLeaderboard(true);
+        }, 100);
+    });
 
     return objects;
 }
@@ -791,7 +1015,24 @@ function initGameOverScreenChildren(scene) {
     .on("pointerdown", () => { objects["playAgainBtn"].setTexture("playAgainDown") })
     .on("pointerup", () => {
         objects["playAgainBtn"].setTexture("playAgainHover");
-        initialiseGame();
+        loadStartScreen();
+    });
+
+    // Refresh button
+    objects["refreshBtn"] = scene.add.image(constants.refreshBtnMarginLeft, constants.refreshBtnMarginTop, "refreshIdle").setOrigin(0.5).setScale(constants.refreshBtnScale);
+    objects["refreshBtn"].setInteractive({ useHandCursor: true })
+    .on("pointerover", () => { objects["refreshBtn"].setTexture(constants.refreshBtnPointerOverTexture) })
+    .on("pointerout", () => { objects["refreshBtn"].setTexture("refreshIdle") })
+    .on("pointerdown", () => { objects["refreshBtn"].setTexture("refreshDown") })
+    .on("pointerup", () => {
+        objects["refreshBtn"].setTexture("refreshHover");
+        for (let i = 0; i < constants.leaderboardListItems; i++) {
+            objects[`leaderboardName${i+1}`].setText("");
+            objects[`leaderboardPts${i+1}`].setText("");
+        }
+        setTimeout(() => {
+	        refreshLeaderboard();
+        }, 100);
     });
 
     return objects;
@@ -810,7 +1051,23 @@ function initAudio(scene) {
         duration: 2000,
     });
 
+    audio.music["menuMusic"] = scene.sound.add("menuMusic", { loop: true, volume: 0 });
+    audio.music.menuMusic.fadeIn = scene.tweens.add({
+        targets: audio.music.menuMusic,
+        volume: {from: 0, to: 0.4},
+        duration: 2000,
+        paused: true,
+    });
+    audio.music.menuMusic.fadeOut = scene.tweens.add({
+        targets: audio.music.menuMusic,
+        volume: {from: 0.4, to: 0},
+        duration: 2000,
+        paused: true,
+    });
+
     audio.effects["successfulWhack"] = scene.sound.add("successfulWhack", { loop: false });
+
+    audio.effects["santaWhack"] = scene.sound.add("santaWhack", { loop: false, volume: 1.5 });
 
     audio.effects["unsuccessfulWhack"] = scene.sound.add("unsuccessfulWhack", { loop: false, volume: 0.6 });
 
@@ -836,6 +1093,14 @@ function loadStartScreen() {
     // Hide everything except the start screen
     Object.keys(screens).forEach(screen => screens[screen].setVisible(false));
     Object.keys(popups).forEach(popup => popups[popup].setVisible(false));
+    popups.musicSplash.setVisible(true);
+
+}
+
+function showMainMenu() {
+    // Hide everything except the main menu
+    Object.keys(screens).forEach(screen => screens[screen].setVisible(false));
+    Object.keys(popups).forEach(popup => popups[popup].setVisible(false));
     screens["introScreen"].setVisible(true);
 
 }
@@ -854,6 +1119,8 @@ function initialiseGame() {
     screens["introScreen"].setVisible(false);
     screens["gameOverScreen"].setVisible(false);
     screens["mainGame"].setVisible(true);
+
+    audio.music.menuMusic.fadeOut.play();
 
     // Starts the countdown for play begin
     countdown.time = 3;
@@ -888,6 +1155,7 @@ function startGameplay() {
     }, 1000);
 
     // Play game music
+    audio.music.menuMusic.stop();
     audio.music.gameMusic.play();
     audio.music.gameMusic.fadeIn.play();
 
@@ -971,21 +1239,37 @@ function stage4() {
 
 }
 
-function refreshLeaderboard() {
+function refreshLeaderboard(popup=false) {
     // API CALL - Get leaderboard data and update display
     api.leaderboard_index().then(res => {
         let ranks = res.data;
-        // Loop through the required number of entries
-        for (let i = 0; i < constants.leaderboardListItems; i++) {
-            if (ranks[i]) {
-                // If name is too long - cut into ellipsis
-                if (ranks[i].name.length > 10) {
-                    screens["gameOverScreen"][`leaderboardName${i+1}`].setText(ranks[i].name.toUpperCase().substr(0, 10)+"...");
+        if (popup) {
+            // Loop through the required number of entries
+            for (let i = 0; i < constants.leaderboardPopupItems; i++) {
+                if (ranks[i]) {
+                    // If name is too long - cut into ellipsis
+                    if (ranks[i].name.length > constants.leaderboardPopupNameCutoff) {
+                        popups.leaderboard[`leaderboardName${i+1}`].setText(ranks[i].name.toUpperCase().substr(0, constants.leaderboardPopupNameCutoff)+"...");
+                    }
+                    else {
+                        popups.leaderboard[`leaderboardName${i+1}`].setText(ranks[i].name.toUpperCase());
+                    }
+                    popups.leaderboard[`leaderboardPts${i+1}`].setText(ranks[i].score);
                 }
-                else {
-                    screens["gameOverScreen"][`leaderboardName${i+1}`].setText(ranks[i].name.toUpperCase());
+            }
+        } else {
+            // Loop through the required number of entries
+            for (let i = 0; i < constants.leaderboardListItems; i++) {
+                if (ranks[i]) {
+                    // If name is too long - cut into ellipsis
+                    if (ranks[i].name.length > 10) {
+                        screens["gameOverScreen"][`leaderboardName${i+1}`].setText(ranks[i].name.toUpperCase().substr(0, 10)+"...");
+                    }
+                    else {
+                        screens["gameOverScreen"][`leaderboardName${i+1}`].setText(ranks[i].name.toUpperCase());
+                    }
+                    screens["gameOverScreen"][`leaderboardPts${i+1}`].setText(ranks[i].score);
                 }
-                screens["gameOverScreen"][`leaderboardPts${i+1}`].setText(ranks[i].score);
             }
         }
     });
@@ -998,6 +1282,9 @@ function gameOver(finalScore) {
 
     // Show the data input popup
     popups["addLeaderboardEntry"].show();
+
+    audio.music.menuMusic.play();
+    audio.music.menuMusic.fadeIn.play();
 
     // Hide game screen and show game over
     screens["mainGame"].setVisible(false);

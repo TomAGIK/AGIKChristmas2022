@@ -130,6 +130,13 @@ export const textStyles = {
         wordWrap: { width: 1000, useAdvancedWrap: true },
         fontFamily: 'Score',
     },
+    leaderboardPopup: {
+        fontSize: '58px',
+        align: 'left',
+        color: colours.blue[1].hex,
+        wordWrap: { width: 1000, useAdvancedWrap: true },
+        fontFamily: 'Score',
+    },
     instructionsBlue: {
         fontSize: '38px',
         align: 'center',

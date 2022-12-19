@@ -17,7 +17,7 @@
         </style>
 
     </head>
-    <body>
+    <body class="bg-[#2f4455]">
         <div id="loadFont" style="font-family:Score; position:absolute; left:-1000px; visibility:hidden;">.</div>
         <div id="phaser">
         </div>

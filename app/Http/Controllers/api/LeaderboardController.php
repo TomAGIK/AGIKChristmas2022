@@ -17,7 +17,7 @@ class LeaderboardController extends Controller
     {
         //
         return response()->json(
-            Leaderboard::orderBy('score', 'DESC')->paginate(10)
+            Leaderboard::orderBy('score', 'DESC')->paginate(15)
         );
     }
 
