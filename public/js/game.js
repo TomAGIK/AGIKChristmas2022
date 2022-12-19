@@ -22,14 +22,22 @@ import { PopupPlugin } from "./classes/plugins/Popup.js";
 
 // Mole class specific to this game
 class Mole extends Phaser.GameObjects.Image {
-    constructor(scene, x, y, key, group) {
-        super(scene, x, y, key);
+
+    constructor(scene, x, y) {
+
+        // Create an image object and add it to the display list
+        super(scene, x, y, "gram");
         scene.add.existing(this);
-        this.scene = scene;
-        this.group = group;
+
+        // Initialise properties
         this.startY = y;
         this.endY = y - constants.moleDisplacement;
+        this.visibleTimeout;
 
+        // Resize mole to correct scale and set as interactive
+        this.setScale(constants.moleScale).setInteractive({ useHandCursor: false }).setVisible(false);
+
+        // Initialise snow blast animation
         this.whackedAnim = scene.add.sprite(this.x, this.endY, "snowBlast", "0").setScale(constants.animationScale).setDepth(1);
         this.whackedAnim.anims.create({
             key: "whacked",
@@ -38,21 +46,21 @@ class Mole extends Phaser.GameObjects.Image {
             frameRate: 48,
         });
 
-        this.setScale(constants.moleScale).setInteractive({ useHandCursor: false }).setVisible(false);
-        this.on("pointerdown", () => { moleClicked(this) });
-        this.visibleTimeout;
-        this.visibleMolesLocation;
+        // Add event listener
+        this.on("pointerdown", this.clicked );
+
+        // Add the intro and outro tween animations
         this.moveUp = scene.tweens.add({
             targets: this,
             props: {
-                y: { from: this.startY, to: this.endY, duration: 500 }
+                y: { from: this.startY, to: this.endY, duration: constants.moleAnimationDuration }
             },
             paused: true,
         });
-        this.moveDownTimeOut = scene.tweens.add({
+        this.moveDown = scene.tweens.add({
             targets: this,
             props: {
-                y: { from: this.endY, to: this.startY, duration: 500 }
+                y: { from: this.endY, to: this.startY, duration: constants.moleAnimationDuration }
             },
             paused: true,
             onComplete: this.timeoutCallback,
@@ -60,59 +68,129 @@ class Mole extends Phaser.GameObjects.Image {
     }
 
     show() {
-        this.setTexture(setMoleTexture());
-        this.moveUp.play();
+        //
+        // Moves this mole up, shows it for a random time, then hides it
+        //
 
+        var timeout; // this holds the time the mole will be shown for
+
+        // Randomise the mole appearance
+        this.randomiseTexture();
+
+        // Depending on the stage, hide the mole after a randomly generated number of seconds
         switch(curStage) {
             case 1:
-                var timeout = getRandomNumber(0.75, 1.5, 2)*1000;
+                timeout = getRandomNumber(0.75, 1.5, 2)*1000;
                 break;
             case 2:
-                var timeout = getRandomNumber(0.6, 1.35, 2)*1000;
+                timeout = getRandomNumber(0.6, 1.35, 2)*1000;
                 break;
             case 3:
-                var timeout = getRandomNumber(0.65, 0.75, 2)*1000;
+                timeout = getRandomNumber(0.65, 0.75, 2)*1000;
                 break;
             case 4:
-                var timeout = getRandomNumber(0.5, 0.7, 2)*1000;
+                timeout = getRandomNumber(0.5, 0.7, 2)*1000;
                 break;
         }
+        this.visibleTimeout = setTimeout(() => { this.hide("timedOut") }, timeout);
 
-        this.visibleTimeout = setTimeout(() => {
-            this.hide("timedOut");
-        }, timeout);
+        // Show the mole and run the move up animation
+        // NOTE: the mole must be set visible AFTER the timeout has been set otherwise the world explodes
         this.setVisible(true);
+        this.moveUp.play();
     }
 
     hide(reason) {
-        if (reason === "timedOut") {
-            this.moveDownTimeOut.play();
-        } else if (reason === "reset") {
-            this.reset();
-            this.setVisible(false);
-        } else if(reason === "whacked") {
-            audio.effects.successfulWhack.play();
-            this.whackedAnim.play("whacked");
-            this.reset();
-            this.setVisible(false);
-            this.visibleTimeout = setTimeout(() => {
-                showMole();
-            }, getRandomNumber(0.2, 0.5, 1)*1000);
+        //
+        // Hides the mole in different ways depending on
+        // the 'reason' the mole needs to be hidden
+        //
+
+        switch (reason) {
+            case "timedOut":
+                // Animate the mole out if it hasn't been clicked fast enough
+                this.moveDown.play();
+                break;
+            case "reset":
+                // Reset mole position and animations on game end
+                this.reset();
+                break;
+            case "whacked":
+                // Play whacked sounds and animation
+                audio.effects.successfulWhack.play();
+                this.whackedAnim.play("whacked");
+
+                // Reset mole position and animations
+                this.reset();
+
+                // Show another mole after a small randomised timeout
+                this.visibleTimeout = setTimeout(showMole, getRandomNumber(0.2, 0.5, 1)*1000);
+                break;
         }
     }
 
-    timeoutCallback(tween, targets, showAnother) {
+    timeoutCallback(tween, targets) {
+        //
+        // Hide this mole and show another after the down animation has completed
+        //
+
         targets[0].setVisible(false);
         showMole();
     }
 
     reset() {
+        //
+        // Reset mole animations, timeouts, and position
+        //
+
+        // Clears the current timeout if present
         clearTimeout(this.visibleTimeout);
-        if (!this.moveDownTimeOut.hasStarted) { this.moveDownTimeOut.play(); }
-        this.moveDownTimeOut.stop();
+
+        // Trying to stop a tween that hasn't started caused issues, so
+        // play the tweens if they haven't run yet, then stop them
+        if (!this.moveDown.hasStarted) { this.moveDown.play(); }
+        this.moveDown.stop();
         if (!this.moveUp.hasStarted) { this.moveUp.play(); }
         this.moveUp.stop();
+
+        // Reset the mole position, and hide it
         this.setPosition(this.x, this.startY);
+        this.setVisible(false);
+    }
+
+    clicked() {
+        //
+        // Update the player score, and hide the mole
+        //
+
+        // The texture key maps to the points object
+        updateScore(textures[this.texture.key].points);
+
+        this.hide("whacked");
+
+    }
+
+    randomiseTexture() {
+        //
+        // Randomises the mole texture based on the keys and probabilities
+        // contained in the textures object
+        //
+
+        // Initialise variables
+        var prob = Math.random();
+        var cumulativeProbs = 0;
+        var newTexture;
+
+        // Set the new texture based on the probabilities in the textures object
+        Object.keys(textures).some(texture => {
+            cumulativeProbs += textures[texture].probability;
+            if (prob <= cumulativeProbs) {
+                newTexture = texture;
+                return true;
+            }
+        });
+
+        this.setTexture(newTexture);
     }
 
 }
@@ -166,72 +244,63 @@ const config = {
     },
 };
 
-// Set different dimensions for mobile and desktop
+// Set different constants for mobile and desktop
 const constants = (screenSize === 'lg') ? {
-    bg_main: "../images/mainBg/1 top.png",
-    instructionsPopupMarginX: 180,
-    instructionsPopupMarginY: 80,
-    instructionsHeaderMarginTop: 35,
+    // Links
+    startScreenBg: "../images/desktopStartScreenBackground.png",
+    instructionsBg: "../images/desktopHTPBackground.png",
+    popupBg: "../images/desktopHTPTextBg.png",
+    mainBg: "../images/mainBg/1 top.png",
+    mainBgSections: ["../images/mainBg/2 top-mid.png", "../images/mainBg/3 mid.png", "../images/mainBg/4 bot.png"],
+    addLeaderboardEntryBg: "../images/desktopAddLeaderboardBg.png",
+    addLeaderboardEntryPopupBg: "../images/leaderboard-details.png",
+    addLeaderboardHTML: "../html/inputs/desktopAddLeaderboardEntry.html",
+    gameOverBg: "../images/desktopGameOverBackground.png",
+
+    // Start screen
+    playBtnPointerOverTexture: "playHover",
+    playBtnOffsetY: 175,
+    instructionsBtnPointerOverTexture: "instructionsHover",
+    instructionsBtnMarginTop: 140,
+
+    // Game instructions
     gameInstructionsPt1: `Different things will pop up out of holes, and you must bash them to gain points.\n\nYou will have 30 seconds to gain as many points as you can.`,
     gameInstructionsPt2: `Be careful though! if you smack\nsanta you will lose`,
     gameInstructionsPt3: `200pts`,
-    instructionTextMarginTop: 30,
-    logo2PaddingTop: 20,
-    logo2PaddingLeft: 20,
-    logo2Scale: 0.2,
-    scoreTextPaddingTop: 265,
-    scoreTextPaddingLeft: 340,
-    timerTextPaddingTop: 265,
-    timerTextPaddingLeft: 1460,
-    countdownMarginTop: 20,
-    holeLocations: [
-        [[0, 0], [1, 0], [2, 0], [3, 0]],
-        [[0, 1], [1, 1], [2, 1], [3, 1]],
-        [[0, 2], [1, 2], [2, 2], [3, 2]],
-    ],
-    moleScale: 1,
-    moleCoordinates: [
-        [475, 720], [800, 720], [1120, 720], [1445, 720],
-        [410, 875], [780, 875], [1140, 875], [1510, 875],
-        [335, 1040], [750, 1040], [1170, 1040], [1585, 1040],
-    ],
-    stage1End: 25,
-    stage2End: 20,
-    stage3End: 10,
-    gameOverBg: "../images/desktopGameOverBackground.png",
-    finalScoreLocation: { x: 455, y: 600 },
-    playAgainBtnMarginTop: 170,
-    playAgainBtnPointerOverTexture: "playAgainHover",
-    startScreenBg: "../images/desktopStartScreenBackground.png",
-    playBtnOffsetY: 175,
-    playBtnPointerOverTexture: "playHover",
-    instructionsBtnMarginTop: 140,
-    instructionsBtnPointerOverTexture: "instructionsHover",
-    instructionsBg: "../images/desktopHTPBackground.png",
-    closeBtnMarginTop: 75,
-    closeBtnMarginRight: 120,
-    closeBtnPointerOverTexture: "closeHover",
-    popupBg: "../images/desktopHTPTextBg.png",
     instructionBlueTextStyle: textStyles.instructionsBlue,
     instruction2BlueTextStyle: textStyles.instructionsBlue2,
     instructionRedTextStyle: textStyles.instructionsRed,
+    closeBtnPointerOverTexture: "closeHover",
+    closeBtnMarginTop: 75,
+    closeBtnMarginRight: 120,
     instructionTextPt1OffsetY: 300,
     instructionTextPt2OffsetY: 825,
     instructionTextPt2OffsetX: 30,
     instructionTextPt3OffsetY: 870,
     instructionTextPt3OffsetX: 212,
-    leaderboardListItems: 10,
-    leaderboardHeader_name: { x: 1100, y: 310 },
-    leaderboardHeader_pts: { x: 1580, y: 310 },
-    leaderboardRanks: { x: 1010, y: 366, displacement: 55, },
-    leaderboardName: { x: 1100, y: 366, displacement: 55, },
-    leaderboardPoints: { x: 1580, y: 366, displacement: 55, },
+
+    // Main game
+    stage1End: 25,
+    stage2End: 20,
+    stage3End: 10,
+    moleCoordinates: [
+        [[475, 720], [800, 720], [1120, 720], [1445, 720]],
+        [[410, 875], [780, 875], [1140, 875], [1510, 875]],
+        [[335, 1040], [750, 1040], [1170, 1040], [1585, 1040]],
+    ],
+    moleScale: 1,
+    scoreTextPaddingTop: 265,
+    scoreTextPaddingLeft: 340,
+    timerTextPaddingTop: 265,
+    timerTextPaddingLeft: 1460,
     gameHitZonePoints: [[200, 435], [1720, 435], [1930, 1080], [-10, 1080]],
-    mainBgSections: ["../images/mainBg/2 top-mid.png", "../images/mainBg/3 mid.png", "../images/mainBg/4 bot.png"],
     scoreOriginX: 0.5,
     moleDisplacement: 130,
-    addLeaderboardEntryBg: "../images/desktopAddLeaderboardBg.png",
-    addLeaderboardEntryPopupBg: "../images/leaderboard-details.png",
+    hammerScale: 0.75,
+    animationScale: 18,
+    moleAnimationDuration: 500,
+
+    // Input leaderboard data
     addLeaderboardEntryPopupLocation: { x: 1920/2, y: 1080/2 },
     addLeaderboardEntryPopupScale: 0.9583,
     skipBtnMarginLeft: 675,
@@ -243,76 +312,76 @@ const constants = (screenSize === 'lg') ? {
     skipBtnPointerOverTexture: "skipHover",
     inputsMarginLeft: 1070,
     inputsMarginTop: 590,
-    addLeaderboardHTML: "../html/inputs/desktopAddLeaderboardEntry.html",
-    hammerScale: 0.75,
-    animationScale: 18,
+
+    // Game over screen
+    playAgainBtnPointerOverTexture: "playAgainHover",
+    playAgainBtnMarginTop: 170,
+    finalScoreLocation: { x: 455, y: 600 },
+
+    // Leaderboard
+    leaderboardListItems: 10,
+    leaderboardHeader_name: { x: 1100, y: 310 },
+    leaderboardHeader_pts: { x: 1580, y: 310 },
+    leaderboardRanks: { x: 1010, y: 366, displacement: 55, },
+    leaderboardName: { x: 1100, y: 366, displacement: 55, },
+    leaderboardPoints: { x: 1580, y: 366, displacement: 55, },
 } : {
-    bg_main: "../images/mainBg/1m top.png",
-    instructionsPopupMarginX: 50,
-    instructionsPopupMarginY: 80,
-    instructionsHeaderMarginTop: 35,
+    // Links
+    startScreenBg: "../images/mobileStartScreenBackground.png",
+    instructionsBg: "../images/mobileHTPBackground.jpg",
+    popupBg: "../images/mobileHTPTextBg.png",
+    mainBg: "../images/mainBg/1m top.png",
+    mainBgSections: ["../images/mainBg/2m top mid.png", "../images/mainBg/3m mid.png", "../images/mainBg/4m bot mid.png", "../images/mainBg/5m bot.png"],
+    addLeaderboardEntryBg: "../images/mobileAddLeaderboardBg.jpg",
+    addLeaderboardEntryPopupBg: "../images/leaderboard-details-mobile.png",
+    addLeaderboardHTML: "../html/inputs/mobileAddLeaderboardEntry.html",
+    gameOverBg: "../images/mobileGameOverBackground.png",
+
+    // Start screen
+    playBtnPointerOverTexture: "playDown",
+    playBtnOffsetY: 50,
+    instructionsBtnPointerOverTexture: "instructionsDown",
+    instructionsBtnMarginTop: 140,
+
+    // Game instructions
     gameInstructionsPt1: `Different things will\npop up out of holes,\nand you must bash\nthem to gain points.\n\nYou will have 30\nseconds to gain as\nmany points as\nyou can.`,
     gameInstructionsPt2: `Be careful though!\nif you smack santa\n\nyou will lose`,
     gameInstructionsPt3: `200pts`,
-    instructionTextMarginTop: 50,
-    logo2PaddingTop: 20,
-    logo2PaddingLeft: 20,
-    logo2Scale: 0.15,
+    instructionBlueTextStyle: textStyles.instructionsBlueMobile,
+    instruction2BlueTextStyle: textStyles.instructionsBlue2Mobile,
+    instructionRedTextStyle: textStyles.instructionsRedMobile,
+    closeBtnPointerOverTexture: "closeDown",
+    closeBtnMarginTop: 75,
+    closeBtnMarginRight: 70,
+    instructionTextPt1OffsetY: 290,
+    instructionTextPt2OffsetY: 1050,
+    instructionTextPt2OffsetX: 50,
+    instructionTextPt3OffsetY: 1186,
+    instructionTextPt3OffsetX: 190,
+
+    // Main game
+    stage1End: 25,
+    stage2End: 20,
+    stage3End: 10,
+    moleCoordinates: [
+        [[215, 810], [455, 810], [688, 810]],
+        [[190, 935], [455, 935], [716, 935]],
+        [[165, 1060], [455, 1060], [744, 1060]],
+        [[145, 1190], [455, 1190], [768, 1190]],
+    ],
+    moleScale: 0.8,
     scoreTextPaddingTop: 165,
     scoreTextPaddingLeft: 808,
     timerTextPaddingTop: 350,
     timerTextPaddingLeft: 540,
-    countdownMarginTop: 20,
-    holeLocations: [
-        [[0, 0], [1, 0], [2, 0]],
-        [[0, 1], [1, 1], [2, 1]],
-        [[0, 2], [1, 2], [2, 2]],
-        [[0, 3], [1, 3], [2, 3]],
-    ],
-    moleScale: 0.8,
-    moleCoordinates: [
-        [215, 810], [455, 810], [688, 810],
-        [190, 935], [455, 935], [716, 935],
-        [165, 1060], [455, 1060], [744, 1060],
-        [145, 1190], [455, 1190], [768, 1190],
-    ],
-    stage1End: 25,
-    stage2End: 20,
-    stage3End: 10,
-    gameOverBg: "../images/mobileGameOverBackground.png",
-    finalScoreLocation: { x: 450, y: 500 },
-    playAgainBtnMarginTop: 115,
-    playAgainBtnPointerOverTexture: "playAgainDown",
-    startScreenBg: "../images/mobileStartScreenBackground.png",
-    playBtnOffsetY: 50,
-    playBtnPointerOverTexture: "playDown",
-    instructionsBtnMarginTop: 140,
-    instructionsBtnPointerOverTexture: "instructionsDown",
-    instructionsBg: "../images/mobileHTPBackground.jpg",
-    closeBtnMarginTop: 75,
-    closeBtnMarginRight: 70,
-    closeBtnPointerOverTexture: "closeDown",
-    popupBg: "../images/mobileHTPTextBg.png",
-    instructionBlueTextStyle: textStyles.instructionsBlueMobile,
-    instruction2BlueTextStyle: textStyles.instructionsBlue2Mobile,
-    instructionRedTextStyle: textStyles.instructionsRedMobile,
-    instructionTextPt1OffsetY: 290,
-    instructionTextPt2OffsetX: 50,
-    instructionTextPt2OffsetY: 1050,
-    instructionTextPt3OffsetX: 190,
-    instructionTextPt3OffsetY: 1186,
-    leaderboardListItems: 5,
-    leaderboardHeader_name: { x: 180, y: 1000 },
-    leaderboardHeader_pts: { x: 600, y: 1000 },
-    leaderboardRanks: { x: 110, y: 1060, displacement: 55, },
-    leaderboardName: { x: 180, y: 1060, displacement: 55, },
-    leaderboardPoints: { x: 600, y: 1060, displacement: 55, },
     gameHitZonePoints: [[45, 510], [865, 510], [960, 1420], [-40, 1420]],
-    mainBgSections: ["../images/mainBg/2m top mid.png", "../images/mainBg/3m mid.png", "../images/mainBg/4m bot mid.png", "../images/mainBg/5m bot.png"],
     scoreOriginX: 1,
     moleDisplacement: 160,
-    addLeaderboardEntryBg: "../images/mobileAddLeaderboardBg.jpg",
-    addLeaderboardEntryPopupBg: "../images/leaderboard-details-mobile.png",
+    hammerScale: 0.6,
+    animationScale: 15,
+    moleAnimationDuration: 500,
+
+    // Input leaderboard data
     addLeaderboardEntryPopupLocation: { x: 900/2, y: 1420/2 },
     addLeaderboardEntryPopupScale: 0.5417,
     skipBtnMarginLeft: 290,
@@ -324,9 +393,19 @@ const constants = (screenSize === 'lg') ? {
     skipBtnPointerOverTexture: "skipDown",
     inputsMarginLeft: 540,
     inputsMarginTop: 740,
-    addLeaderboardHTML: "../html/inputs/mobileAddLeaderboardEntry.html",
-    hammerScale: 0.6,
-    animationScale: 15,
+
+    // Game over screen
+    playAgainBtnPointerOverTexture: "playAgainDown",
+    playAgainBtnMarginTop: 115,
+    finalScoreLocation: { x: 450, y: 500 },
+
+    // Leaderboard
+    leaderboardListItems: 5,
+    leaderboardHeader_name: { x: 180, y: 1000 },
+    leaderboardHeader_pts: { x: 600, y: 1000 },
+    leaderboardRanks: { x: 110, y: 1060, displacement: 55, },
+    leaderboardName: { x: 180, y: 1060, displacement: 55, },
+    leaderboardPoints: { x: 600, y: 1060, displacement: 55, },
 }
 
 // Initialise global game variables
@@ -334,7 +413,7 @@ var api = new API;
 var screens = {}; // Contains all the game screens
 var popups = {}; // Contains all the game popups
 var audio = {}; // Contains all the sounds used in the game
-var animations = {};
+var animations = {}; // Contains the animations in the game
 var player = { // Holds information about the current player
     name: "",
     attempts: 0,
@@ -348,12 +427,12 @@ var timer; // Timer interval id is assigned to this
 var timeLimit = 30; // Time limit on the game
 var timeRemaining;
 var emitter; // Variable to hold the event emitter for the game
-var points = { // The different textures for the moles, and the corresponding point worth of each
-    "reindeer": 50,
-    "elf": 100,
-    "agik": 150,
-    "gram": 300,
-    "santa": -200,
+var textures = { // The different textures for the moles, and the corresponding point worth of each
+    "reindeer": {points: 50, probability: 0.3},
+    "elf": {points: 100, probability: 0.3},
+    "agik": {points: 150, probability: 0.2},
+    "gram": {points: 300, probability: 0.1},
+    "santa": {points: -200, probability: 0.1},
 }
 var visibleMoles = []; // Array of all moles currently visible
 var curStage = 0;
@@ -376,7 +455,7 @@ function preload() {
     this.load.image("playIdle", "../images/buttons/play-idle.png");
     this.load.image("playHover", "../images/buttons/play-hovered.png");
     this.load.image("playDown", "../images/buttons/play-clicked.png");
-    this.load.image("bg_main", constants.bg_main);
+    this.load.image("mainBg", constants.mainBg);
     this.load.image("playAgainIdle", "../images/buttons/play-again-idle.png");
     this.load.image("playAgainHover", "../images/buttons/play-again-hovered.png");
     this.load.image("playAgainDown", "../images/buttons/play-again-clicked.png");
@@ -541,7 +620,7 @@ function initMainGameChildren(scene) {
     var objects = {};
 
     // Background Image 1
-    objects["bg0"] = scene.add.image(0, 0, "bg_main").setOrigin(0);
+    objects["bg0"] = scene.add.image(0, 0, "mainBg").setOrigin(0);
 
     // Score text
     objects["score"] = scene.add.text(constants.scoreTextPaddingLeft, constants.scoreTextPaddingTop, `${player.score}`, textStyles.score).setOrigin(constants.scoreOriginX, 0);
@@ -554,21 +633,19 @@ function initMainGameChildren(scene) {
     .on("pointerdown", () => { audio.effects.unsuccessfulWhack.play() });
 
     // Create a mole at each hole
-    constants.holeLocations.forEach((row, i) => {
-        var rowNum = i;
-        row.forEach((location, i) => {
+    constants.moleCoordinates.forEach((row, y) => {
+        // var rowNum = y;
+        row.forEach((location, x) => {
             // Add the mole at the correct placement, with a random texture
-            objects[`location${location[0]}${location[1]}`] = new Mole(
+            objects[`location${x}${y}`] = new Mole(
                 scene,
-                constants.moleCoordinates[rowNum*row.length + i][0],
-                constants.moleCoordinates[rowNum*row.length + i][1],
-                setMoleTexture(),
-                scene.add.group()
+                location[0],
+                location[1]
                 );
         });
 
         // Add the next piece of the background
-        objects[`bg${rowNum+1}`] = scene.add.image(0, 0, `bg${rowNum+1}`).setOrigin(0);
+        objects[`bg${y+1}`] = scene.add.image(0, 0, `bg${y+1}`).setOrigin(0);
     });
 
     // Hammer
@@ -819,43 +896,6 @@ function updateCountdown() {
     }
 }
 
-function setMoleTexture() {
-    // Returns a string based on the following percentages
-    // santa -> 10%
-    // reindeer -> 30%
-    // elf -> 30%
-    // agik -> 20%
-    // gram -> 10%
-
-    var probability = Math.random();
-    var texture;
-
-    // This is redundant at the moment, but I've left it because
-    // this is going to get updated with the texture frames when they're ready
-    if (probability <= 0.1) {
-        texture = "santa";
-    } else if (probability <= 0.4) {
-        texture = "reindeer";
-    } else if (probability <= 0.7) {
-        texture = "elf";
-    } else if (probability <= 0.9) {
-        texture = "agik";
-    } else {
-        texture = "gram";
-    }
-
-    return texture;
-}
-
-function moleClicked(mole) {
-    // updateplayer score, set mole to not visible (can keep the timeout though possibly, will test and see)
-
-    updateScore(points[mole.texture.key]);
-
-    mole.hide("whacked");
-
-}
-
 function updateScore(increment) {
     // Updates the player's score, and the display
     player.score += increment;
@@ -867,14 +907,14 @@ function showMole() {
     // Shows a mole that is not already visible
 
     do { // Get random coordinates
-        var x = getRandomInt(0, constants.holeLocations[0].length-1);
-        var y = getRandomInt(0, constants.holeLocations.length-1);
+        var x = getRandomInt(0, constants.moleCoordinates[0].length-1);
+        var y = getRandomInt(0, constants.moleCoordinates.length-1);
         // var x = 0;
         // var y = 0;
     } while (screens["mainGame"][`location${x}${y}`].visible); // check if mole at this location is visible already
 
     // // Update mole texture -> MOVE TO MOLE CLASS
-    // screens["mainGame"][`location${x}${y}`].setTexture(setMoleTexture());
+    // screens["mainGame"][`location${x}${y}`].setTexture(randomiseTexture());
 
     // Set mole to visible
     // visibleMoles.push([x, y]); // SHOULD BE IN MOLE CLASS
