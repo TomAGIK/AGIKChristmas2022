@@ -1015,7 +1015,7 @@ function initGameOverScreenChildren(scene) {
     .on("pointerdown", () => { objects["playAgainBtn"].setTexture("playAgainDown") })
     .on("pointerup", () => {
         objects["playAgainBtn"].setTexture("playAgainHover");
-        loadStartScreen();
+        showMainMenu();
     });
 
     // Refresh button
