@@ -42,9 +42,9 @@ class LeaderboardController extends Controller
         if (isset($leaderboard)) {
             if ($leaderboard->score <= $request->score) {
                 $leaderboard->score = $request->score;
-                $leaderboard->attempts++;
-                $leaderboard->save();
             }
+            $leaderboard->attempts++;
+            $leaderboard->save();
         }
         else {
             $leaderboard = new Leaderboard;
