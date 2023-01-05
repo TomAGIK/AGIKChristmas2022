@@ -1,0 +1,10 @@
+id: 40573
+name: christmasbash
+environments:
+    production:
+        memory: 512
+        cli-memory: 128
+        runtime: 'php-8.1:al2'
+        build:
+            - 'composer install --no-dev'
+            - 'php artisan event:cache'
